@@ -35,7 +35,7 @@ class ComposeLifecycleTest extends TestCase
         if ($override) {
             $command = [...$command, '-f', $this->overrideFile];
         }
-        $process = new Process([...$command, ...$arguments], base_path(), null, null, 150);
+        $process = new Process([...$command, ...$arguments], base_path(), ['APP_KEY' => false, 'DB_PASSWORD' => false, 'REDIS_PASSWORD' => false, 'HTTP_PORT' => false, 'HTTP_BIND' => false], null, 150);
         $process->run();
 
         return $process;
@@ -77,6 +77,6 @@ class ComposeLifecycleTest extends TestCase
         $port = trim($this->compose(['port', 'web', '80'])->getOutput());
         $content = file_get_contents('http://'.$port.'/scans/'.$publicId.'/export');
         $this->assertSame('fixture.test', json_decode($content, true, 512, JSON_THROW_ON_ERROR)['scan']['domain']);
-        $this->assertTrue(hash_equals($keyHash,hash_file('sha256',$this->environmentFile)));
+        $this->assertTrue(hash_equals($keyHash, hash_file('sha256', $this->environmentFile)));
     }
 }

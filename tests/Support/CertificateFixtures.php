@@ -6,11 +6,17 @@ class CertificateFixtures
 {
     private static array $cache = [];
 
+    private static array $caPaths = [];
+
+    private static array $serverPaths = [];
+
     private static ?string $rootPath = null;
 
     public static function chain(string $scenario = 'trusted'): array
     {
         if (isset(self::$cache[$scenario])) {
+            self::$rootPath = self::$caPaths[$scenario];
+
             return self::$cache[$scenario];
         }
         $file = tempnam(sys_get_temp_dir(), 'mail-cert-');
@@ -29,12 +35,27 @@ class CertificateFixtures
             chmod($path, 0600);
             file_put_contents($path, $rootPem);
             self::$rootPath = $path;
-            register_shutdown_function(fn () => @unlink($path));
+            self::$caPaths[$scenario] = $path;
+            openssl_pkey_export($key, $privatePem);
+            $serverPath = tempnam(sys_get_temp_dir(), 'mail-server-cert-');
+            chmod($serverPath, 0600);
+            file_put_contents($serverPath, $leafPem.$rootPem.$privatePem);
+            self::$serverPaths[$scenario] = $serverPath;
+            $owner = getmypid();
+            register_shutdown_function(fn () => getmypid() === $owner ? @unlink($serverPath) : null);
+            register_shutdown_function(fn () => getmypid() === $owner ? @unlink($path) : null);
 
             return self::$cache[$scenario] = [$leafPem, $rootPem];
         } finally {
             unlink($file);
         }
+    }
+
+    public static function serverCertificate(string $scenario = 'trusted'): string
+    {
+        self::chain($scenario);
+
+        return self::$serverPaths[$scenario];
     }
 
     public static function caFile(): string

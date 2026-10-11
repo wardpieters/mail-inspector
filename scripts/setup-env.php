@@ -12,7 +12,8 @@ chmod($path, 0600);
 $text = file_get_contents($path);
 foreach (['APP_KEY' => 'base64:'.base64_encode(random_bytes(32)), 'DB_PASSWORD' => bin2hex(random_bytes(24)), 'REDIS_PASSWORD' => bin2hex(random_bytes(24))] as $key => $value) {
     if (preg_match('/^'.preg_quote($key, '/').'=(.*)$/m', $text, $match)) {
-        if (trim($match[1], " \t\r\n\"'") !== '') {
+        $existing = trim($match[1], " \t\r\n\"'");
+        if ($existing !== '' && ! in_array(strtolower($existing), ['null', '(null)'], true)) {
             continue;
         }
         $text = preg_replace('/^'.preg_quote($key, '/').'=[^\r\n]*$/m', $key.'='.$value, $text, 1);
@@ -26,4 +27,4 @@ chmod($temp, 0600);
 fwrite($handle, $text);
 fclose($handle);
 rename($temp, $path);
-fwrite(STDOUT,"Environment prepared. Existing secrets were preserved.\n");
+fwrite(STDOUT, "Environment prepared. Existing secrets were preserved.\n");

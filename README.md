@@ -62,3 +62,13 @@ Results reflect one scanner network and one observation time. A scanner firewall
 SPF, DKIM and DMARC analyze published policy and keys; they do not authenticate a message. DKIM selectors must be supplied. DMARC uses RFC 9989 DNS tree walk and RFC 9990 external-report authorization. CAA affects issuance and does not invalidate existing certificates. DANE usages 2 and 3 are evaluated independently of PKIX. Missing DANE anchors and local legacy TLS restrictions remain inconclusive. No DATA/body is sent: external RCPT acceptance is suspected relay behavior, never proof of delivery. Configure operator-controlled external probe identities to enable that optional check.
 
 Reports are accessible to anyone with their unguessable URL until retention expires. No recurring scans or email notifications are scheduled.
+
+## Verification
+
+The isolated suite runs real IPv4/IPv6 SMTP sockets, STARTTLS with observed MX SNI, cryptographically signed DNS zones through Unbound, Redis permits, and concurrent PostgreSQL claims. A separate host-side lifecycle suite verifies production migration gating and report/key persistence across restarts:
+
+```sh
+MAIL_TEST_COMPOSE=true vendor/bin/phpunit tests/Integration/ComposeLifecycleTest.php
+```
+
+Build production images first. These tests create and remove their own random Compose projects and volumes. Test-container runs skip host-only lifecycle tests; run them separately as above. Browser observations and explicit QA limitations are in [the acceptance checklist](tests/Browser/acceptance-checklist.md).

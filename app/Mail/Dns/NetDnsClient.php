@@ -19,7 +19,13 @@ class NetDnsClient implements DnsClient
         if (++$this->queries > 256) {
             return new DnsResult($name, $type, 'ERROR', [], 'indeterminate', 'DNS query budget exhausted.');
         }
-        $options = ['nameservers' => [config('mail_scan.dns_server')], 'dns_port' => (int) config('mail_scan.dns_port'), 'timeout' => $budget->timeout(3) / 2, 'dnssec' => true, 'dnssec_ad_flag' => true, 'dnssec_cd_flag' => $checkingDisabled, 'strict_query_mode' => false];
+        // NetDNS2 accepts literal resolver addresses; Docker config uses a service name.
+        $server = (string) config('mail_scan.dns_server');
+        $servers = filter_var($server, FILTER_VALIDATE_IP) ? [$server] : (gethostbynamel($server) ?: []);
+        if ($servers === []) {
+            return new DnsResult($name, $type, 'ERROR', [], 'indeterminate', 'Configured resolver hostname could not be resolved.');
+        }
+        $options = ['nameservers' => $servers, 'dns_port' => (int) config('mail_scan.dns_port'), 'timeout' => $budget->timeout(3) / 2, 'dnssec' => true, 'dnssec_ad_flag' => true, 'dnssec_cd_flag' => $checkingDisabled, 'strict_query_mode' => false];
         try {
             $resolver = new Resolver($options);
             $packet = $resolver->query(rtrim($name, '.').'.', $type);

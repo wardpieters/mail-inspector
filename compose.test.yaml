@@ -11,9 +11,18 @@ services:
       DB_USERNAME: fixture
       DB_PASSWORD: fixture-only
       MAIL_TEST_INTEGRATION: "true"
+      MAIL_TEST_DNS: "true"
     depends_on:
+      dns-test: {condition: service_healthy}
       redis-test: {condition: service_healthy}
       postgres-test: {condition: service_healthy}
+  dns-test:
+    build: {context: tests/Fixtures/dns}
+    healthcheck:
+      test: [CMD-SHELL, "dig @127.0.0.1 -p 1053 good.fixture.test MX +short | grep -q mx.good.fixture.test"]
+      interval: 2s
+      timeout: 3s
+      retries: 20
   redis-test:
     image: redis:7.4-bookworm
     healthcheck:
