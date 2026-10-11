@@ -1,7 +1,7 @@
 # Mail server tester: design specification
 
 Date: 2026-10-11
-Status: Design approved in conversation; written specification awaiting review.
+Status: Approved by the user on 2026-10-11, including the Inertia and browser-preference theme amendment.
 
 ## 1. Purpose and accepted requirements
 
@@ -17,11 +17,11 @@ Success means real DNS and SMTP observations, endpoint-specific findings, useful
 
 The first release includes a domain input, optional DKIM selector input, scan submission, a progress page, saved report pages, and JSON export. No user accounts, billing, recurring domain monitoring, email sending, report notifications, inbound mailbox, or email upload/signature verification are included.
 
-Use Laravel 13 with PHP 8.4, Blade templates, small Alpine.js interactions, and Vite-built CSS. Use a restrained, readable diagnostic interface: light background, navy text, teal actions, and status labels that do not rely on color. The page must work on mobile, support keyboard interaction, and expose progress updates without moving focus.
+Use Laravel 13 with PHP 8.4, Inertia, Vue 3, TypeScript, and Vite-built Tailwind CSS. Render application pages as Vue components served by Laravel through Inertia; the minimal HTML document shell is not an application UI. Use a restrained, readable diagnostic interface with teal actions and status labels that do not rely on color. Provide both light and dark palettes selected by the browser's `prefers-color-scheme` preference, with light as the fallback. The theme follows preference changes while the page is open, styles native controls through `color-scheme`, and does not require a saved preference or manual toggle. The page must work on mobile, support keyboard interaction, and expose progress updates without moving focus.
 
 The report contains a domain overview, transport/security assessment, priority-ordered findings, domain DNS checks, and an MX endpoint matrix. Each endpoint is identified by MX name, preference, literal IP address, and address family. Expandable details show timestamps, timing, DNS evidence, certificate metadata, and a bounded SMTP transcript. Domain-level policies appear once, with their endpoint-specific application visible in the matrix.
 
-Scan status is polled over ordinary HTTP every two seconds while active; polling stops at terminal status. A job failure must leave a readable report rather than an indefinitely spinning screen.
+Scan status is polled through Inertia partial reloads every two seconds while active; polling stops at terminal status and is cleaned up when the page unmounts. A job failure must leave a readable report rather than an indefinitely spinning screen.
 
 Reports use random, non-enumerable public identifiers. Anyone who possesses a report URL can read it; there is no claim of account-based privacy. Report pages are excluded from indexing. Scan history is not exposed as a public list. Default retention is seven days and is configurable. Export contains the same findings and limitations as the displayed report.
 
@@ -195,7 +195,7 @@ Required verification:
 7. FCRDNS binary address equality, suspected relay acceptance, explicit denial, inconclusive rejection, and assertions that no DATA command or message body is sent.
 8. Private/reserved and IPv4-mapped address blocking, malicious DNS aliases, HTTP target pinning, bounded evidence, and no shell interpolation.
 9. Job retries/duplicate delivery, outbox recovery, lost-worker deadlines, partial reports, terminal progress, cleanup, and correct summary precedence.
-10. Fresh Compose startup with migrations, service health, frontend asset build, worker execution, persistent reports across restarts, and responsive browser review.
+10. Fresh Compose startup with migrations, service health, frontend asset build, worker execution, persistent reports across restarts, Inertia form errors and polling, and responsive browser review in both browser-preference themes, including a preference change while the page is open.
 
 Live scanning is an optional operator smoke check, not the foundation for automated tests. Verify each required behavior using fixtures and record any unavailable Docker/network verification separately. Completion requires a working source tree, deployment documentation, successful applicable tests/builds, and an honest statement of remaining verification limitations.
 
@@ -209,6 +209,8 @@ No opaque security score, selector guessing, or message delivery is included. Th
 
 - [Laravel 13 release notes](https://laravel.com/docs/13.x/releases)
 - [Laravel queues](https://laravel.com/docs/13.x/queues)
+- [Inertia documentation](https://inertiajs.com/)
+- [Tailwind browser-preference dark mode](https://tailwindcss.com/docs/dark-mode)
 - [Docker IPv6 networking](https://docs.docker.com/engine/daemon/ipv6/)
 - [Unbound validating resolver](https://www.nlnetlabs.nl/projects/unbound/about/)
 - [Net_DNS2 resource record support](https://netdns2.com/documentation/resource-records-supported/)
@@ -223,4 +225,4 @@ No opaque security score, selector guessing, or message delivery is included. Th
 
 ## 15. Specification self-review
 
-Reviewed against the approved design and user requirements: every requested check has an explicit definition; IPv4/IPv6 coverage and limitations are represented; migration ordering, queue recovery, public report access, and retention are defined; no message delivery or actual message-authentication claim is made; authenticated DANE and PKIX are independent; current DMARC policy discovery is identified; resource ceilings produce explicit limitations. No deferred product decisions or placeholder sections remain.
+Reviewed against the approved design and user requirements: every requested check has an explicit definition; IPv4/IPv6 coverage and limitations are represented; migration ordering, queue recovery, public report access, and retention are defined; no message delivery or actual message-authentication claim is made; authenticated DANE and PKIX are independent; current DMARC policy discovery is identified; resource ceilings produce explicit limitations; the user-approved amendment specifies Inertia and light/dark mode following browser preference. No deferred product decisions or placeholder sections remain.
