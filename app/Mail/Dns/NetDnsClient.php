@@ -22,11 +22,11 @@ class NetDnsClient implements DnsClient
         $options = ['nameservers' => [config('mail_scan.dns_server')], 'dns_port' => (int) config('mail_scan.dns_port'), 'timeout' => $budget->timeout(3) / 2, 'dnssec' => true, 'dnssec_ad_flag' => true, 'dnssec_cd_flag' => $checkingDisabled, 'strict_query_mode' => false];
         try {
             $resolver = new Resolver($options);
-            $packet = $resolver->query($name.'.', $type);
+            $packet = $resolver->query(rtrim($name, '.').'.', $type);
             if ($packet->header->tc) {
                 $options['use_tcp'] = true;
                 $options['timeout'] = $budget->timeout(3);
-                $packet = (new Resolver($options))->query($name.'.', $type);
+                $packet = (new Resolver($options))->query(rtrim($name, '.').'.', $type);
             }
         } catch (DnsException $e) {
             $packet = $e->getResponse();
@@ -66,6 +66,6 @@ class NetDnsClient implements DnsClient
             default => null
         };
 
-        return $data === null ? null : ['name' => strtolower(rtrim((string) $rr->name,'.')), 'type' => $type, 'ttl' => $rr->ttl, 'data' => $data];
+        return $data === null ? null : ['name' => strtolower(rtrim((string) $rr->name, '.')), 'type' => $type, 'ttl' => $rr->ttl, 'data' => $data];
     }
 }

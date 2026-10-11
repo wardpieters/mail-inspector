@@ -4,6 +4,8 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 class ScanSubmissionTest extends TestCase {
  use RefreshDatabase;
+ protected function setUp(): void {parent::setUp();\Illuminate\Support\Facades\Queue::fake();}
+
  public function test_submits_normalized_domain_with_outbox(): void {
   $this->post('/scans',['domain'=>'EXAMPLE.COM.','selectors'=>[]])->assertRedirect();
   $this->assertDatabaseHas('scans',['domain'=>'example.com','status'=>'queued']);
