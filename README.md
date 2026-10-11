@@ -1,58 +1,64 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Mail Inspector
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+A self-hosted Laravel 13 / Inertia 3 / Vue 3 application for inspecting a domain's incoming mail configuration. Light and dark palettes follow the browser preference automatically.
 
-## About Laravel
+It discovers every MX priority and all A/AAAA addresses, then probes each independently on port 25. Reports cover DNSSEC, CAA, Connect, Answer, HELO, TLS, Secure, Cert, From, MTA-STS, DANE, FCRDNS, suspected open relay, SPF, selector-based DKIM, and DMARC. Evidence, remediation, coverage, public report links, and JSON export are included.
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## Start with Docker Compose
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+Requires Docker Engine with Compose **2.24.4+** (override support), working internet access for image builds, and outbound TCP 25. IPv6 additionally requires real host and container routing.
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
-
-## Learning Laravel
-
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
-
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
-
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
-
-## Agentic Development
-
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
-
-```bash
-composer require laravel/boost --dev
-
-php artisan boost:install
+```sh
+php scripts/setup-env.php
+# Edit .env: APP_URL, SCAN_HELO and optionally sender/relay identities.
+docker compose up --build -d --wait
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+Open http://localhost:8080. The one-shot migration service must succeed before app, workers, and scheduler start. PostgreSQL, Redis, and Unbound have no published ports. Scan jobs use Redis; reports persist in PostgreSQL; the scheduler recovers work and prunes reports after seven days.
 
-## Contributing
+```sh
+docker compose up -d --scale worker=4
+docker compose logs -f worker scheduler
+docker compose exec app php artisan scanner:diagnose
+```
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+Hosted HTTP binding and IPv6 options:
 
-## Code of Conduct
+```sh
+docker compose -f compose.yaml -f compose.hosted.yaml -f compose.ipv6.yaml up --build -d
+```
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+A hosted scanner needs a provider that permits outbound port 25. Compose does not publish an inbound SMTP port or unblock provider restrictions. Put the web service behind an HTTPS reverse proxy and configure trusted proxies and secure cookies. See [deployment and operations](docs/deployment.md).
 
-## Security Vulnerabilities
+## Local development and tests
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+PHP 8.4+ with intl, sockets, PDO SQLite/PostgreSQL, Redis, cURL and OpenSSL; Composer 2 and Node 24.
 
-## License
+```sh
+composer install
+npm ci
+npm run build
+# For a local PHP server, configure local DB/Redis/resolver values in .env.
+php artisan migrate
+php artisan serve
+php artisan queue:work redis --queue=discovery,endpoints --timeout=240
+php artisan schedule:work
+```
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+```sh
+vendor/bin/phpunit
+npm run test:unit -- --run
+npm run typecheck
+npm run build
+docker compose -p mail-inspector-test -f compose.test.yaml run --rm php-test vendor/bin/phpunit tests/Integration
+```
+
+The integration suite uses isolated fixture services and generated certificates. A cached-service host alternative is documented in deployment.md. Unit tests use deterministic DNS/SMTP fakes. Production has no request-controlled private-address or port bypass.
+
+## Interpreting reports
+
+Results reflect one scanner network and one observation time. A scanner firewall, blocked outbound 25, or unavailable IPv6 can cause incomplete coverage. Every discovered public endpoint remains visible. A valid null MX explicitly declines inbound mail.
+
+SPF, DKIM and DMARC analyze published policy and keys; they do not authenticate a message. DKIM selectors must be supplied. DMARC uses RFC 9989 DNS tree walk and RFC 9990 external-report authorization. CAA affects issuance and does not invalidate existing certificates. DANE usages 2 and 3 are evaluated independently of PKIX. Missing DANE anchors and local legacy TLS restrictions remain inconclusive. No DATA/body is sent: external RCPT acceptance is suspected relay behavior, never proof of delivery. Configure operator-controlled external probe identities to enable that optional check.
+
+Reports are accessible to anyone with their unguessable URL until retention expires. No recurring scans or email notifications are scheduled.

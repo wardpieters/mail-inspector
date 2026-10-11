@@ -1,0 +1,121 @@
+name: mail-inspector
+x-application: &application
+  image: mail-inspector-app:local
+  build: {context: ., target: runtime}
+  env_file: .env
+  environment: &app-env
+    APP_ENV: production
+    APP_DEBUG: "false"
+    LOG_CHANNEL: stderr
+    DB_CONNECTION: pgsql
+    DB_HOST: postgres
+    DB_PORT: "5432"
+    DB_DATABASE: mail_inspector
+    DB_USERNAME: mail_inspector
+    REDIS_HOST: redis
+    REDIS_PORT: "6379"
+    CACHE_STORE: redis
+    QUEUE_CONNECTION: redis
+    SESSION_DRIVER: redis
+    REDIS_QUEUE_RETRY_AFTER: "300"
+    SCAN_DNS_SERVER: unbound
+    SCAN_DNS_TRUSTED: "true"
+  volumes: [app_storage:/app/storage]
+  init: true
+  restart: unless-stopped
+  stop_grace_period: 260s
+  networks: [services, egress]
+services:
+  web:
+    image: mail-inspector-web:local
+    build: {context: ., target: web}
+    ports: ["${HTTP_BIND:-127.0.0.1}:${HTTP_PORT:-8080}:80"]
+    depends_on:
+      app: {condition: service_healthy}
+    networks: [services]
+    restart: unless-stopped
+    healthcheck:
+      test: [CMD, wget, -q, -O, /dev/null, http://127.0.0.1/up]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+  app:
+    <<: *application
+    depends_on:
+      migrate: {condition: service_completed_successfully}
+      redis: {condition: service_healthy}
+      unbound: {condition: service_healthy}
+    healthcheck:
+      test: [CMD, php, /app/docker/php/healthcheck.php]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+  migrate:
+    <<: *application
+    restart: "no"
+    command: [php, artisan, migrate, --force, --no-interaction]
+    depends_on:
+      postgres: {condition: service_healthy}
+    networks: [services]
+  worker:
+    <<: *application
+    command: [php, artisan, queue:work, redis, "--queue=discovery,endpoints", "--sleep=1", "--timeout=240", "--max-time=3600"]
+    depends_on:
+      migrate: {condition: service_completed_successfully}
+      redis: {condition: service_healthy}
+      unbound: {condition: service_healthy}
+  scheduler:
+    <<: *application
+    command: [php, artisan, schedule:work, --no-interaction]
+    depends_on:
+      migrate: {condition: service_completed_successfully}
+      redis: {condition: service_healthy}
+    networks: [services]
+  postgres:
+    image: postgres:17-bookworm
+    environment:
+      POSTGRES_DB: mail_inspector
+      POSTGRES_USER: mail_inspector
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?Run php scripts/setup-env.php}
+    volumes: [postgres_data:/var/lib/postgresql/data]
+    networks: [services]
+    restart: unless-stopped
+    healthcheck:
+      test: [CMD-SHELL, "pg_isready -U mail_inspector -d mail_inspector"]
+      interval: 5s
+      timeout: 5s
+      retries: 15
+  redis:
+    image: redis:7.4-bookworm
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?Run php scripts/setup-env.php}
+    entrypoint: [/bin/sh, -ec]
+    command:
+      - 'exec redis-server --appendonly yes --requirepass "$$REDIS_PASSWORD"'
+    volumes: [redis_data:/data]
+    networks: [services]
+    restart: unless-stopped
+    healthcheck:
+      test: [CMD-SHELL, 'REDISCLI_AUTH="$$REDIS_PASSWORD" redis-cli ping | grep -q PONG']
+      interval: 5s
+      timeout: 5s
+      retries: 15
+  unbound:
+    build: {context: docker/unbound}
+    volumes: [resolver_state:/var/lib/unbound]
+    networks: [services, egress]
+    restart: unless-stopped
+    healthcheck:
+      test: [CMD, /usr/local/bin/healthcheck.sh]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+networks:
+  services: {internal: true}
+  egress: {}
+volumes:
+  app_storage: {}
+  postgres_data: {}
+  redis_data: {}
+  resolver_state: {}

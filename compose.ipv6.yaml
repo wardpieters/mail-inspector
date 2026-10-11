@@ -1,0 +1,7 @@
+networks:
+  egress:
+    enable_ipv6: true
+    ipam:
+      config:
+        - subnet: 172.30.25.0/24
+        - subnet: ${DOCKER_IPV6_SUBNET:-fd25:25:25::/64}

@@ -1,0 +1,6 @@
+services:
+  web:
+    ports: !override ["${HOSTED_HTTP_BIND:-0.0.0.0}:${HTTP_PORT:-8080}:80"]
+    networks: [services, edge]
+networks:
+  edge: {}
