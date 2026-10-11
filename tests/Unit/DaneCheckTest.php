@@ -38,6 +38,6 @@ class DaneCheckTest extends TestCase
         $target = new EndpointTarget('mx.test', 0, '8.8.8.8', 4, true);
         $probe = new ProbeResult([], true, [], new TlsObservation(true, 'TLSv1.3', 'x', 256, $chain));
         $answer = new DnsResult('_25._tcp.mx.test', 'TLSA', 'NOERROR', [['name' => '_25._tcp.mx.test', 'type' => 'TLSA', 'ttl' => 300, 'data' => ['usage' => 2, 'selector' => 0, 'matching' => 1, 'association' => hash('sha256', OpenSslVerifier::der($chain[1]))]]], 'secure');
-        $this->assertNotSame(Outcome::Pass,app(DaneCheck::class)->evaluate($target,$probe,$answer,new ScanBudget(30))->outcome);
+        $this->assertNotSame(Outcome::Pass, app(DaneCheck::class)->evaluate($target, $probe, $answer, new ScanBudget(30))->outcome);
     }
 }

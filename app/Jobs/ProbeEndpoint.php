@@ -52,7 +52,7 @@ class ProbeEndpoint implements ShouldQueue
                 $this->release(2);
             }
 
-return;
+            return;
         }$lease = null;
         try {
             $lease = $repository->claimEndpoint($endpoint);
@@ -60,7 +60,7 @@ return;
                 return;
             }
             $budget = new ScanBudget(min((float) config('mail_scan.endpoint_seconds', 30), max(0, $endpoint->scan->deadline->getTimestamp() - now()->timestamp)));
-            $findings = $inspector->inspect($target, PolicySnapshot::fromArray($endpoint->scan->policy_snapshot ?? []), $budget);
+            $findings = $inspector->inspect($target, PolicySnapshot::fromArray($endpoint->scan->policy_snapshot ?? []), $budget, $endpoint->scan->domain);
             $repository->completeEndpoint($endpoint, $lease, $findings);
         } catch (\Throwable $e) {
             if ($lease) {

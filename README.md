@@ -72,3 +72,5 @@ MAIL_TEST_COMPOSE=true vendor/bin/phpunit tests/Integration/ComposeLifecycleTest
 ```
 
 Build production images first. These tests create and remove their own random Compose projects and volumes. Test-container runs skip host-only lifecycle tests; run them separately as above. Browser observations and explicit QA limitations are in [the acceptance checklist](tests/Browser/acceptance-checklist.md).
+
+Completed implementation checks, review fixes, and remaining limitations are recorded in [the verification report](docs/superpowers/reports/2026-10-11-mail-server-tester-verification.md).

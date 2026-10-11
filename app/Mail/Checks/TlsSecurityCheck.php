@@ -24,6 +24,6 @@ class TlsSecurityCheck
             return Finding::make('secure', 'inconclusive', 'Modern TLS negotiated; legacy coverage incomplete', 'The scanner could not establish rejection of every legacy version.', $evidence);
         }
 
-        return Finding::make('secure','pass','Modern TLS security observed','The negotiated cipher meets the baseline; tested legacy versions were refused.',$evidence);
+        return Finding::make('secure', 'pass', 'Modern TLS security observed', 'The negotiated cipher meets the baseline; tested legacy versions were refused.', $evidence);
     }
 }

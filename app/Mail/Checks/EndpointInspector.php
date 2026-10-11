@@ -16,9 +16,9 @@ class EndpointInspector
 {
     public function __construct(private SmtpProbe $smtp, private CertificateCheck $certificates, private TlsSecurityCheck $security, private LegacyTlsProbe $legacy, private ReverseDns $reverse, private MtaStsCheck $sts, private DaneCheck $dane) {}
 
-    public function inspect(EndpointTarget $target, PolicySnapshot $policies, ScanBudget $budget): array
+    public function inspect(EndpointTarget $target, PolicySnapshot $policies, ScanBudget $budget, ?string $domain = null): array
     {
-        $probe = $this->smtp->probe($target, $budget);
+        $probe = $this->smtp->probe($target, $budget, $domain);
         $findings = $probe->findings;
         try {
             $findings[] = $this->certificates->analyze($target, $probe->tls?->chainPem ?? [], $budget);
@@ -41,7 +41,7 @@ class EndpointInspector
         if (! $authenticated) {
             $findings[] = Finding::make('authenticated_transport', 'warning', 'Authenticated transport not established', 'Neither enforcing MTA-STS nor DANE was verified for this address.', [], 'Deploy MTA-STS enforcement or DNSSEC-authenticated DANE.', 'medium');
         }
-        $findings[] = Finding::make('smtp_transcript','info','Bounded SMTP transcript','Configured envelope identities are redacted; no DATA command is sent.',['transcript' => $probe->transcript]);
+        $findings[] = Finding::make('smtp_transcript', 'info', 'Bounded SMTP transcript', 'Configured envelope identities are redacted; no DATA command is sent.', ['transcript' => $probe->transcript]);
 
         return $findings;
     }

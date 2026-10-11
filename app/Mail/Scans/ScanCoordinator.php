@@ -31,7 +31,11 @@ class ScanCoordinator
             if ($scan->terminal() || $scan->deadline <= now() || $scan->routing_snapshot !== null) {
                 return;
             }
-            $scan->update(['status' => 'running', 'started_at' => $scan->started_at ?? now(), 'capabilities' => ['php' => PHP_VERSION, 'openssl' => OPENSSL_VERSION_TEXT, 'ipv6_socket_supported' => defined('AF_INET6'), 'ipv6_egress' => 'determined by per-address probes', 'dns_trusted' => (bool) config('mail_scan.dns_trusted'), 'relay_probe_configured' => (bool) (config('mail_scan.relay_sender') && config('mail_scan.relay_recipient'))]]);
+            $started = Scan::whereKey($scan->id)->whereIn('status', ['queued', 'running'])->where('deadline', '>', now())->whereNull('routing_snapshot')->update(['status' => 'running', 'started_at' => $scan->started_at ?? now(), 'capabilities' => ['php' => PHP_VERSION, 'openssl' => OPENSSL_VERSION_TEXT, 'ipv6_socket_supported' => defined('AF_INET6'), 'ipv6_egress' => 'determined by per-address probes', 'dns_trusted' => (bool) config('mail_scan.dns_trusted'), 'relay_probe_configured' => (bool) (config('mail_scan.relay_sender') && config('mail_scan.relay_recipient'))]]);
+            if (! $started) {
+                return;
+            }
+            $scan->refresh();
             $input = new ScanInput($scan->domain, $scan->selectors);
             $budget = new ScanBudget(min(230, max(0, $scan->deadline->getTimestamp() - now()->timestamp)));
             $routing = $this->routing->discover($input, $budget);

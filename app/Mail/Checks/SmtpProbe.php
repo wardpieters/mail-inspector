@@ -15,7 +15,7 @@ class SmtpProbe
 {
     public function __construct(private SmtpSessionFactory $factory, private TlsNegotiator $negotiator) {}
 
-    public function probe(EndpointTarget $target, ScanBudget $budget): ProbeResult
+    public function probe(EndpointTarget $target, ScanBudget $budget, ?string $domain = null): ProbeResult
     {
         $findings = [];
         $session = null;
@@ -69,10 +69,10 @@ class SmtpProbe
             if (! $reset->accepted()) {
                 throw new \RuntimeException('RSET failed; envelope probe stopped.');
             }
-            $findings[] = $this->relay($session);
+            $findings[] = $this->relay($session, $domain);
             $session->command('QUIT');
         } catch (\Throwable $e) {
-            $local = in_array($e->getCode(), [47, 97, 99], true);
+            $local = in_array($e->getCode(), [47, 49, 50, 97, 99, 100, 101, 10047, 10049, 10050, 10051], true);
             $findings[] = Finding::make($connected ? 'smtp_dialogue' : 'connect', $local ? 'inconclusive' : ($connected ? 'inconclusive' : 'fail'), $local ? 'Scanner cannot use this address family' : 'SMTP probe did not complete', substr($e->getMessage(), 0, 500), ['ip' => $target->ip, 'error_code' => $e->getCode()], $local ? 'Configure working IPv6 egress on the scanner host.' : ($connected ? null : 'Check outbound port 25, routing, firewall, and the remote listener.'), $local || $connected ? 'none' : 'high');
         } finally {
             if ($session) {
@@ -83,12 +83,21 @@ class SmtpProbe
         return $this->finish($findings, $session, $connected, $capabilities, $tls);
     }
 
-    private function relay(SmtpSession $session): Finding
+    private function relay(SmtpSession $session, ?string $domain): Finding
     {
         $sender = (string) config('mail_scan.relay_sender');
         $recipient = (string) config('mail_scan.relay_recipient');
         if (! filter_var($sender, FILTER_VALIDATE_EMAIL) || ! filter_var($recipient, FILTER_VALIDATE_EMAIL)) {
             return Finding::make('open_relay', 'skipped', 'Relay probe not configured', 'Set operator-controlled external sender and recipient identities. No message is transmitted.');
+        }
+        if ($domain === null) {
+            return Finding::make('open_relay', 'skipped', 'Relay scope is unavailable', 'The scanned domain is required to verify external probe identities.');
+        }
+        foreach ([$sender, $recipient] as $identity) {
+            $identityDomain = strtolower(substr($identity, strrpos($identity, '@') + 1));
+            if ($identityDomain === $domain || str_ends_with($identityDomain, '.'.$domain)) {
+                return Finding::make('open_relay', 'skipped', 'Relay identity belongs to the scanned domain', 'Both configured envelope identities must be external to this domain. Local recipient acceptance is not relay evidence.');
+            }
         }
         $mail = $session->command('MAIL FROM:<'.$sender.'>');
         if (! $mail->accepted()) {

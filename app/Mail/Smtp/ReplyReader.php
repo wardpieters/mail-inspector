@@ -40,7 +40,7 @@ class ReplyReader
                         throw new \RuntimeException('Unexpected data after SMTP reply.');
                     }
 
-return new SmtpReply($code, $lines);
+                    return new SmtpReply($code, $lines);
                 }
             }
             if (strlen($buffer) > 1000) {

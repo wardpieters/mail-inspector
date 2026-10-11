@@ -40,6 +40,6 @@ class DmarcCheckTest extends TestCase
         $dns = new FakeDnsClient;
         $this->app->instance(DnsClient::class, $dns);
         app(DmarcDiscovery::class)->discover('a.b.c.d.e.f.g.h.i.j.example.test', new ScanBudget(300));
-        $this->assertCount(8, array_filter($dns->queries(), fn ($q) => str_starts_with($q[0],'_dmarc.')));
+        $this->assertCount(8, array_filter($dns->queries(), fn ($q) => str_starts_with($q[0], '_dmarc.')));
     }
 }

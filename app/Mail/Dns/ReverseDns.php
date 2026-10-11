@@ -16,7 +16,7 @@ class ReverseDns
         $name = strlen($binary) === 4 ? implode('.', array_reverse(explode('.', $target->ip))).'.in-addr.arpa' : implode('.', array_reverse(str_split(bin2hex($binary)))).'.ip6.arpa';
         $ptr = $this->lookup->resolve($name, 'PTR', $budget);
         $evidence = ['ptr' => $ptr->jsonSerialize(), 'forward' => []];
-        if (! $ptr->ok()) {
+        if (! $ptr->ok() && $ptr->status !== 'NXDOMAIN') {
             return Finding::make('fcrdns', 'inconclusive', 'Reverse DNS lookup failed', $ptr->status, $evidence);
         }
         if (! $ptr->ofType()) {
@@ -26,7 +26,7 @@ class ReverseDns
         foreach (array_slice($ptr->ofType(), 0, 8) as $record) {
             $forward = $this->lookup->resolve($record['data']['target'], $target->family === 4 ? 'A' : 'AAAA', $budget);
             $evidence['forward'][] = $forward->jsonSerialize();
-            $errors = $errors || ! $forward->ok();
+            $errors = $errors || (! $forward->ok() && $forward->status !== 'NXDOMAIN');
             foreach ($forward->ofType() as $address) {
                 if (@inet_pton($address['data']['address']) === $binary) {
                     return Finding::make('fcrdns', 'pass', 'Reverse DNS is forward confirmed', 'A PTR name resolves back to this exact address.', $evidence);

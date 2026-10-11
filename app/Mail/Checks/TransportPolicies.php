@@ -51,11 +51,11 @@ class TransportPolicies
             }
         }
         $reporting = $this->lookup->resolve('_smtp._tls.'.$input->domain, 'TXT', $budget);
-        $findings[] = Finding::make('tlsrpt', $reporting->ok() ? 'info' : 'inconclusive', $reporting->texts() ? 'TLS reporting record found' : 'No TLS reporting record', 'Supporting evidence for transport policy monitoring.', $reporting->jsonSerialize());
+        $findings[] = Finding::make('tlsrpt', ($reporting->ok() || $reporting->status === 'NXDOMAIN') ? 'info' : 'inconclusive', $reporting->texts() ? 'TLS reporting record found' : 'No TLS reporting record', 'Supporting evidence for transport policy monitoring.', $reporting->jsonSerialize());
         foreach (array_unique(array_map(fn ($t) => $t->mx, $routing->targets)) as $mx) {
-            $tlsa[$mx] = $this->lookup->resolve('_25._tcp.'.$mx,'TLSA',$budget);
+            $tlsa[$mx] = $this->lookup->resolve('_25._tcp.'.$mx, 'TLSA', $budget);
         }
 
-        return new PolicySnapshot($policy,$tlsa,$findings);
+        return new PolicySnapshot($policy, $tlsa, $findings);
     }
 }

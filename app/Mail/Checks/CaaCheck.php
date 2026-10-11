@@ -21,6 +21,10 @@ class CaaCheck
                 return [Finding::make('caa', 'inconclusive', 'CAA discovery failed', $result->status, ['path' => $path], null, 'none', $subject)];
             }
             if ($result->ofType()) {
+                $invalid = array_values(array_filter($result->ofType(), fn ($r) => ! $this->validProperty($r['data'])));
+                if ($invalid) {
+                    return [Finding::make('caa', 'fail', 'Malformed CAA property', 'Recognized CAA values must follow their property syntax. Malformed issue values forbid issuance under RFC 8659; CAA does not invalidate an existing certificate.', ['source' => $name, 'path' => $path, 'invalid' => $invalid], 'Correct the malformed property values.', 'medium', $subject)];
+                }
                 $critical = array_filter($result->ofType(), fn ($r) => ($r['data']['flags'] & 128) !== 0 && ! in_array($r['data']['tag'], ['issue', 'issuewild', 'iodef'], true));
 
                 return [Finding::make('caa', $critical ? 'warning' : 'pass', $critical ? 'Unrecognized critical CAA property' : 'Effective CAA policy found', 'CAA controls certificate issuance; it does not validate an existing SMTP certificate.', ['source' => $name, 'path' => $path], $critical ? 'Review the critical property; issuers must refuse issuance if they cannot process it.' : null, $critical ? 'medium' : 'none', $subject)];
@@ -29,5 +33,41 @@ class CaaCheck
         }
 
         return [Finding::make('caa', 'info', 'No CAA issuance restriction', 'CAA is optional; absence does not invalidate certificates.', ['path' => $path], null, 'none', $subject)];
+    }
+
+    private function validProperty(array $record): bool
+    {
+        $tag = $record['tag'];
+        $value = $record['value'];
+        if (! preg_match('/^[a-z0-9]+$/D', $tag)) {
+            return false;
+        }
+        if (in_array($tag, ['issue', 'issuewild'], true)) {
+            $parts = explode(';', $value, 2);
+            $issuer = trim($parts[0], " \t");
+            $label = '[a-z0-9](?:[a-z0-9-]*[a-z0-9])?';
+            if ($issuer !== '' && (! preg_match('/^'.$label.'(?:\.'.$label.')*$/iD', $issuer) || strlen($issuer) > 253 || array_filter(explode('.', $issuer), fn ($part) => strlen($part) > 63))) {
+                return false;
+            }
+            if (isset($parts[1]) && trim($parts[1], " \t") !== '') {
+                foreach (explode(';', $parts[1]) as $parameter) {
+                    if (! preg_match('/^'.$label.'[ \t]*=[ \t]*[\x21-\x3A\x3C-\x7E]*[ \t]*$/iD', trim($parameter, " \t"))) {
+                        return false;
+                    }
+                }
+            }
+        } elseif ($tag === 'iodef') {
+            $uri = parse_url($value);
+            if (! is_array($uri)) {
+                return false;
+            }
+            $scheme = strtolower($uri['scheme'] ?? '');
+
+            return $scheme === 'mailto'
+                ? (bool) filter_var(rawurldecode($uri['path'] ?? ''), FILTER_VALIDATE_EMAIL)
+                : (in_array($scheme, ['http', 'https'], true) && isset($uri['host']) && (bool) filter_var($value, FILTER_VALIDATE_URL));
+        }
+
+        return true;
     }
 }

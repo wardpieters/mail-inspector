@@ -14,7 +14,7 @@ class SpfCheck
 
     public function analyze(ScanInput $input, ScanBudget $budget): array
     {
-        $state = ['path' => [], 'diagnostics' => [], 'limitations' => [], 'lookup_estimate' => 0, 'queries' => 0, 'dns_error' => false];
+        $state = ['path' => [], 'diagnostics' => [], 'limitations' => [], 'lookup_estimate' => 0, 'queries' => 0, 'dns_error' => false, 'broad_authorization' => []];
         $record = $this->walk($input->domain, $budget, [], $state);
         $outcome = 'pass';
         $severity = 'none';
@@ -28,6 +28,11 @@ class SpfCheck
             $severity = 'high';
             $title = 'SPF configuration errors';
             $recommendation = 'Repair the record and its include/redirect dependencies.';
+        } elseif ($state['broad_authorization']) {
+            $outcome = 'fail';
+            $severity = 'high';
+            $title = 'SPF permits broad sender authorization';
+            $recommendation = 'Remove unrestricted address ranges or permissive include/redirect dependencies.';
         } elseif ($record === null) {
             $outcome = 'warning';
             $severity = 'medium';
@@ -63,7 +68,7 @@ class SpfCheck
         return [Finding::make('spf', $outcome, $title, 'Checks publication and dependencies, not a message-level SPF result. Lookup totals are upper estimates for conditional paths.', $state, $recommendation, $severity)];
     }
 
-    private function walk(string $domain, ScanBudget $budget, array $ancestors, array &$state): ?string
+    private function walk(string $domain, ScanBudget $budget, array $ancestors, array &$state, bool $positivePath = true): ?string
     {
         $budget->check();
         if (in_array($domain, $ancestors, true)) {
@@ -94,7 +99,7 @@ class SpfCheck
                 $state['diagnostics'][] = 'Missing SPF dependency at '.$domain;
             }
 
-return null;
+            return null;
         }
         $record = $records[0];
         $parsed = $this->parser->parse($record);
@@ -102,6 +107,9 @@ return null;
         $local = 0;
         $ancestors[] = $domain;
         foreach ($parsed['mechanisms'] as $m) {
+            if ($positivePath && $m['qualifier'] === '+' && ($m['name'] === 'all' || (in_array($m['name'], ['ip4', 'ip6'], true) && str_ends_with($m['value'], '/0')))) {
+                $state['broad_authorization'][] = ['domain' => $domain, 'mechanism' => $m['name'], 'value' => $m['value']];
+            }
             if ($m['name'] === 'all') {
                 break;
             }
@@ -118,7 +126,7 @@ return null;
                 $state['limitations'][] = 'Deprecated ptr mechanism requires message context.';
             }
             if ($m['name'] === 'include') {
-                $this->walk(strtolower(rtrim($m['value'], '.')), $budget, $ancestors, $state);
+                $this->walk(strtolower(rtrim($m['value'], '.')), $budget, $ancestors, $state, $positivePath && $m['qualifier'] === '+');
             }
         }
         if (isset($parsed['modifiers']['redirect']) && ! array_filter($parsed['mechanisms'], fn ($m) => $m['name'] === 'all')) {
@@ -128,7 +136,7 @@ return null;
             if (str_contains($redirect, '%')) {
                 $state['limitations'][] = 'Dynamic redirect.';
             } else {
-                $this->walk(strtolower(rtrim($redirect, '.')), $budget, $ancestors, $state);
+                $this->walk(strtolower(rtrim($redirect, '.')), $budget, $ancestors, $state, $positivePath);
             }
         }
         if ($local > 10) {

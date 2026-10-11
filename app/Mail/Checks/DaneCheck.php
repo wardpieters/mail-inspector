@@ -20,7 +20,7 @@ class DaneCheck
         if ($tlsa->validation === 'bogus') {
             return Finding::make('dane', 'fail', 'TLSA DNSSEC validation failed', 'Bogus policy prevents authenticated DANE delivery.', $evidence, 'Repair TLSA DNSSEC validation.', 'high');
         }
-        if (! $tlsa->ok()) {
+        if (! $tlsa->ok() && $tlsa->status !== 'NXDOMAIN') {
             return Finding::make('dane', 'inconclusive', 'TLSA lookup failed', $tlsa->status, $evidence);
         }
         if (! $target->discoverySecure || $tlsa->validation !== 'secure') {
@@ -48,7 +48,7 @@ class DaneCheck
                     return Finding::make('dane', 'pass', 'DANE end-entity association verified', 'The leaf certificate matches authenticated TLSA; PKIX and expiry are independent diagnostics.', $evidence + ['matched' => $record]);
                 }
 
-continue;
+                continue;
             }
             $anchors = [];
             foreach (array_slice($chain, 1) as $pem) {
@@ -86,9 +86,9 @@ continue;
             }
         }
         if ($unavailable && ! $matchedAnchor) {
-            return Finding::make('dane','inconclusive','DANE trust anchor unavailable','A hashed/SPKI anchor not supplied in the server chain cannot be reconstructed.',$evidence);
+            return Finding::make('dane', 'inconclusive', 'DANE trust anchor unavailable', 'A hashed/SPKI anchor not supplied in the server chain cannot be reconstructed.', $evidence);
         }
 
-        return Finding::make('dane','fail','No authenticated TLSA association validates this endpoint','Association matching and usage-specific certificate checks did not succeed.',$evidence,'Update TLSA after certificate/key changes and include the required chain.','high');
+        return Finding::make('dane', 'fail', 'No authenticated TLSA association validates this endpoint', 'Association matching and usage-specific certificate checks did not succeed.', $evidence, 'Update TLSA after certificate/key changes and include the required chain.', 'high');
     }
 }

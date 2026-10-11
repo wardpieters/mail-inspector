@@ -37,6 +37,6 @@ class DnsLookup
             return new DnsResult($original, $type, 'NOERROR', $records, $secure ? 'secure' : 'insecure', null, $aliases);
         }
 
-        return new DnsResult($original,$type,'ERROR',[],'indeterminate','CNAME hop limit reached.',$aliases);
+        return new DnsResult($original, $type, 'ERROR', [], 'indeterminate', 'CNAME hop limit reached.', $aliases);
     }
 }

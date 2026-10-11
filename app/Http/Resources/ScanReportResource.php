@@ -26,6 +26,6 @@ class ScanReportResource extends JsonResource
             return array_map(fn ($v) => $this->redact($v), $value);
         }
 
-return $value;
+        return $value;
     }
 }

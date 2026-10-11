@@ -32,6 +32,6 @@ class MtaStsCheckTest extends TestCase
         $target = new EndpointTarget('mx.test', 0, '8.8.8.8', 4);
         $probe = new ProbeResult([], true, [], new TlsObservation(true, 'TLSv1.3', 'x', 256));
         $finding = app(MtaStsCheck::class)->evaluate($target, $probe, ['state' => 'valid', 'mode' => 'enforce', 'mx' => ['mx.test'], 'pkix_valid' => false]);
-        $this->assertSame(Outcome::Fail,$finding->outcome);
+        $this->assertSame(Outcome::Fail, $finding->outcome);
     }
 }

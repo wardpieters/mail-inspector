@@ -30,6 +30,9 @@ class ScanReportTest extends TestCase
     public function test_null_mx_has_clear_precedence_and_expired_report_is_404(): void
     {
         $scan = Scan::factory()->create(['status' => 'completed', 'routing_snapshot' => ['null_mx' => true, 'omitted' => 0]]);
+        foreach (['dnssec', 'caa', 'spf', 'dkim', 'dmarc'] as $check) {
+            app(ScanRepository::class)->putFinding($scan, null, Finding::make($check, 'info', 'Completed fixture DNS observation'));
+        }
         $this->assertSame('Mail intentionally disabled', app(ReportAssessment::class)->assess($scan)['overall']);
         $scan->update(['created_at' => now()->subDays(8)]);
         $this->get('/scans/'.$scan->public_id)->assertNotFound();

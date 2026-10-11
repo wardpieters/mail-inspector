@@ -36,9 +36,7 @@ class DiscoverScan implements ShouldQueue
 
     public function failed(?\Throwable $exception): void
     {
-        $scan = Scan::find($this->scanId);
-        if ($scan && ! $scan->terminal() && $scan->routing_snapshot === null) {
-            $scan->update(['status' => 'failed', 'finished_at' => now(), 'terminal_error' => 'Discovery worker could not complete the scan.']);
-        }
+        Scan::whereKey($this->scanId)->whereIn('status', ['queued', 'running'])->whereNull('routing_snapshot')
+            ->update(['status' => 'failed', 'finished_at' => now(), 'terminal_error' => 'Discovery worker could not complete the scan.']);
     }
 }

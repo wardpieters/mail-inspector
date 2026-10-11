@@ -22,7 +22,8 @@ class MxDiscovery
         $targets = [];
         $omitted = 0;
         if (! $mx->ok()) {
-            $findings[] = Finding::make('mx', 'fail', 'Mail routing could not be resolved', $mx->status, $mx->jsonSerialize(), 'Correct DNS routing or retry after the resolver recovers.', 'high');
+            $missing = $mx->status === 'NXDOMAIN';
+            $findings[] = Finding::make('mx', $missing ? 'fail' : 'inconclusive', 'Mail routing could not be resolved', $mx->status, $mx->jsonSerialize(), $missing ? 'Correct the domain DNS configuration.' : 'Retry when the resolver is available.', $missing ? 'high' : 'none');
 
             return new RoutingSnapshot([], $findings, false, 0, $evidence);
         }
@@ -52,10 +53,12 @@ class MxDiscovery
                 continue;
             }
             $count = 0;
+            $uncertain = false;
             foreach (['A' => 4, 'AAAA' => 6] as $type => $family) {
                 $addresses = $this->lookup->resolve($host, $type, $budget);
                 $evidence[] = $addresses->jsonSerialize();
-                if (! $addresses->ok()) {
+                if (! $addresses->ok() && $addresses->status !== 'NXDOMAIN') {
+                    $uncertain = true;
                     $findings[] = Finding::make('mx_address_'.$type, 'inconclusive', 'Address lookup failed', $addresses->status, $addresses->jsonSerialize(), null, 'none', $host);
                 }
                 if ($addresses->aliases) {
@@ -66,6 +69,7 @@ class MxDiscovery
                         $ip = $this->guard->normalize($address['data']['address']);
                         $this->guard->assertPublic($ip);
                     } catch (UnsafeTarget $e) {
+                        $uncertain = true;
                         $findings[] = Finding::make('mx_target_blocked', 'inconclusive', 'Unsafe mail target blocked', $e->getMessage(), ['ip' => $address['data']['address']], null, 'none', $host.':'.$address['data']['address']);
 
                         continue;
@@ -84,13 +88,13 @@ class MxDiscovery
                 }
             }
             if ($count === 0) {
-                $findings[] = Finding::make('mx_no_address', 'fail', 'MX has no usable public addresses', 'No endpoint can be probed.', [], 'Publish usable A or AAAA records.', 'high', $host);
+                $findings[] = Finding::make('mx_no_address', $uncertain ? 'inconclusive' : 'fail', $uncertain ? 'MX address discovery is incomplete' : 'MX has no usable public addresses', 'No endpoint can be probed.', [], $uncertain ? 'Retry address discovery after the lookup or scanner limitation is resolved.' : 'Publish usable A or AAAA records.', $uncertain ? 'none' : 'high', $host);
             }
         }
         if ($omitted) {
-            $findings[] = Finding::make('coverage','inconclusive','Endpoint limit reached',"$omitted addresses were omitted.",['omitted' => $omitted]);
+            $findings[] = Finding::make('coverage', 'inconclusive', 'Endpoint limit reached', "$omitted addresses were omitted.", ['omitted' => $omitted]);
         }
 
-        return new RoutingSnapshot($targets,$findings,false,$omitted,$evidence);
+        return new RoutingSnapshot($targets, $findings, false, $omitted, $evidence);
     }
 }

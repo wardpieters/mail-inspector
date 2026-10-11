@@ -19,7 +19,7 @@ class SmtpProbeTest extends TestCase
         config(['mail_scan.relay_sender' => 'sender@scanner.test', 'mail_scan.relay_recipient' => 'recipient@external.test']);
         $session = new FakeSmtpSession(['greeting' => [220, ['mx.test ESMTP']]]);
         $this->app->instance(SmtpSessionFactory::class, new FakeSmtpSessionFactory($session));
-        $probe = app(SmtpProbe::class)->probe(new EndpointTarget('mx.test', 0, '8.8.8.8', 4), new ScanBudget(30));
+        $probe = app(SmtpProbe::class)->probe(new EndpointTarget('mx.test', 0, '8.8.8.8', 4), new ScanBudget(30), 'fixture.test');
         $relay = array_values(array_filter($probe->findings, fn ($f) => $f->key === 'open_relay'))[0];
         $verbs = array_map(fn ($c) => explode(' ', $c)[0], $session->commands);
         $this->assertSame(Outcome::Warning, $relay->outcome);
@@ -34,7 +34,7 @@ class SmtpProbeTest extends TestCase
         config(['mail_scan.relay_sender' => 'sender@scanner.test', 'mail_scan.relay_recipient' => 'recipient@external.test']);
         $session = new FakeSmtpSession(['greeting' => [220, ['mx.test']], 'RCPT' => [550, ['5.1.1 Unknown recipient']]]);
         $this->app->instance(SmtpSessionFactory::class, new FakeSmtpSessionFactory($session));
-        $probe = app(SmtpProbe::class)->probe(new EndpointTarget('mx.test', 0, '8.8.8.8', 4), new ScanBudget(30));
+        $probe = app(SmtpProbe::class)->probe(new EndpointTarget('mx.test', 0, '8.8.8.8', 4), new ScanBudget(30), 'fixture.test');
         $relay = array_values(array_filter($probe->findings, fn ($f) => $f->key === 'open_relay'))[0];
         $this->assertSame(Outcome::Inconclusive, $relay->outcome);
     }
@@ -43,7 +43,7 @@ class SmtpProbeTest extends TestCase
     {
         $session = new FakeSmtpSession(['greeting' => [220, ['mx.test']], 'EHLO' => [250, ['mx.test', 'STARTTLS']], 'STARTTLS' => [220, ['Begin TLS']]]);
         $this->app->instance(SmtpSessionFactory::class, new FakeSmtpSessionFactory($session));
-        app(SmtpProbe::class)->probe(new EndpointTarget('mx.test', 0, '8.8.8.8', 4), new ScanBudget(30));
+        app(SmtpProbe::class)->probe(new EndpointTarget('mx.test', 0, '8.8.8.8', 4), new ScanBudget(30), 'fixture.test');
         $verbs = array_map(fn ($c) => explode(' ', $c)[0], $session->commands);
         $this->assertSame(2, count(array_filter($verbs, fn ($v) => $v === 'EHLO')));
         $failed = new class(['greeting' => [220, ['mx.test']], 'EHLO' => [250, ['mx.test', 'STARTTLS']], 'STARTTLS' => [220, ['Begin TLS']]]) extends FakeSmtpSession
@@ -54,7 +54,7 @@ class SmtpProbeTest extends TestCase
             }
         };
         $this->app->instance(SmtpSessionFactory::class, new FakeSmtpSessionFactory($failed));
-        app(SmtpProbe::class)->probe(new EndpointTarget('mx.test', 0, '8.8.8.8', 4), new ScanBudget(30));
+        app(SmtpProbe::class)->probe(new EndpointTarget('mx.test', 0, '8.8.8.8', 4), new ScanBudget(30), 'fixture.test');
         $this->assertNotContains('MAIL', array_map(fn ($c) => explode(' ', $c)[0], $failed->commands));
     }
 }
