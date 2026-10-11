@@ -1,0 +1,30 @@
+services:
+  php-test:
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile.test
+    volumes: [".:/app"]
+    environment:
+      APP_ENV: testing
+      REDIS_HOST: redis-test
+      DB_HOST: postgres-test
+      DB_USERNAME: fixture
+      DB_PASSWORD: fixture-only
+      MAIL_TEST_INTEGRATION: "true"
+    depends_on:
+      redis-test: {condition: service_healthy}
+      postgres-test: {condition: service_healthy}
+  redis-test:
+    image: redis:7-alpine
+    healthcheck:
+      test: [CMD, redis-cli, ping]
+      interval: 2s
+      retries: 15
+  postgres-test:
+    image: postgres:17-alpine
+    environment: {POSTGRES_DB: fixture, POSTGRES_USER: fixture, POSTGRES_PASSWORD: fixture-only}
+    healthcheck:
+      test: [CMD-SHELL, pg_isready -U fixture]
+      interval: 2s
+      retries: 15
+    tmpfs: [/var/lib/postgresql/data]
