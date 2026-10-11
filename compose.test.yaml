@@ -15,13 +15,13 @@ services:
       redis-test: {condition: service_healthy}
       postgres-test: {condition: service_healthy}
   redis-test:
-    image: redis:7-alpine
+    image: redis:7.4-bookworm
     healthcheck:
       test: [CMD, redis-cli, ping]
       interval: 2s
       retries: 15
   postgres-test:
-    image: postgres:17-alpine
+    image: postgres:17-bookworm
     environment: {POSTGRES_DB: fixture, POSTGRES_USER: fixture, POSTGRES_PASSWORD: fixture-only}
     healthcheck:
       test: [CMD-SHELL, pg_isready -U fixture]
