@@ -24,4 +24,17 @@ class StoreScanRequest extends FormRequest
     {
         return ['domain' => ['required', 'string', 'max:253'], 'selectors' => ['sometimes', 'array', 'max:10'], 'selectors.*' => ['string', 'max:190']];
     }
+
+    public function messages(): array
+    {
+        return [
+            'domain.required' => __('The domain is required.'),
+            'domain.string' => __('The domain must be a string.'),
+            'domain.max' => __('The domain may not exceed :max characters.'),
+            'selectors.array' => __('The selectors must be an array.'),
+            'selectors.max' => __('Use at most :max DKIM selectors.'),
+            'selectors.*.string' => __('Each DKIM selector must be a string.'),
+            'selectors.*.max' => __('Each DKIM selector may not exceed :max characters.'),
+        ];
+    }
 }

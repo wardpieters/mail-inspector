@@ -23,6 +23,6 @@ class ScanController extends Controller
     {
         $scan = Scan::where('public_id', $publicId)->where('created_at', '>', now()->subDays(config('mail_scan.retention_days', 7)))->firstOrFail();
 
-        return Inertia::render('Scans/Show', ['report' => (new ScanReportResource($scan))->resolve(), 'message' => session('message')]);
+        return Inertia::render('Scans/Show', ['report' => (new ScanReportResource($scan))->resolve(), 'message' => session('message') ? __(session('message')) : null]);
     }
 }

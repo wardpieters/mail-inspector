@@ -5,7 +5,7 @@ use App\Http\Controllers\ScanExportController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
-Route::get('/', fn () => Inertia::render('Home', ['submit_url' => route('scans.store')]))->name('home');
+Route::get('/', fn () => Inertia::render('Home', ['submit_url' => route('scans.store'), 'retention_days' => (int) config('mail_scan.retention_days', 7)]))->name('home');
 Route::post('/scans', [ScanController::class, 'store'])->middleware('throttle:scans')->name('scans.store');
 Route::get('/scans/{publicId}', [ScanController::class, 'show'])->whereUuid('publicId')->name('scans.show');
 

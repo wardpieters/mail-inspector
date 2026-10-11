@@ -8,10 +8,41 @@ import EndpointMatrix from '../../Components/EndpointMatrix.vue';
 import ScanProgress from '../../Components/ScanProgress.vue';
 import StatusBadge from '../../Components/StatusBadge.vue';
 import { useScanPolling } from '../../Composables/useScanPolling';
+import { useTranslations } from '../../Composables/useTranslations';
 import type { Report } from '../../types/report';
-const props=defineProps<{report: Report; message?: string}>();
-useScanPolling(computed(()=>props.report.scan.status));
-const active=computed(()=>['queued','running'].includes(props.report.scan.status));
-function date(value: string | null) {return value ? new Date(value).toLocaleString() : 'Not yet';}
+const props = defineProps<{report: Report; message?: string}>();
+const { t, date } = useTranslations();
+useScanPolling(computed(() => props.report.scan.status));
+const active = computed(() => ['queued', 'running'].includes(props.report.scan.status));
 </script>
-<template><AppLayout><Head :title="report.scan.domain"/><section class="scan-heading"><div class="section-title"><div><p class="eyebrow">DOMAIN CONFIGURATION REPORT</p><h1>{{ report.scan.domain }}</h1><p class="muted">{{ report.assessment.overall }}<span v-if="active"> · Observations are still arriving</span></p></div><div class="actions"><Link :href="report.home_url">New scan</Link><a :href="report.export_url" class="export-link">Export JSON ↗</a></div></div><p v-if="message" class="help">{{ message }}</p><p v-if="report.scan.error" class="error" role="alert">{{ report.scan.error }}</p><ScanProgress :status="report.scan.status" :coverage="report.assessment.coverage"/><div v-if="report.scan.null_mx" class="panel"><h2>Mail is intentionally disabled</h2><p class="muted">This domain publishes a valid null MX. Incoming SMTP checks are not applicable; sender DNS policies are shown independently.</p></div><SummaryCards :assessment="report.assessment"/><div class="section-title"><h2>DNS &amp; domain policies</h2><span class="help">{{ report.domain_findings.length }} observations</span></div><p v-if="!report.domain_findings.length" class="muted">Waiting for DNS discovery and policy checks.</p><FindingCard v-for="finding in report.domain_findings" :key="finding.key+finding.scope" :finding="finding"/><div v-if="report.endpoints.length" class="section-title"><h2>Mail endpoints</h2><span class="help">All priorities · both address families</span></div><EndpointMatrix v-if="report.endpoints.length" :endpoints="report.endpoints"/><section v-for="(endpoint,index) in report.endpoints" :id="'endpoint-'+index" :key="endpoint.mx+endpoint.ip" class="endpoint"><div class="section-title"><div><h2>{{ endpoint.mx }}</h2><div class="tags"><span class="badge">Priority {{ endpoint.preference }}</span><span class="badge">IPv{{ endpoint.family }}</span><span class="mono">{{ endpoint.ip }}</span></div></div><StatusBadge :outcome="endpoint.status"/></div><p v-if="!endpoint.findings.length" class="muted">{{ endpoint.status === 'expired' || endpoint.status === 'failed' ? 'No endpoint observations returned.' : 'Waiting for this address to be inspected.' }}</p><FindingCard v-for="finding in endpoint.findings" :key="finding.key+finding.scope" :finding="finding"/></section><section class="panel report-notes"><h2>About these observations</h2><p v-for="note in report.limitations" :key="note" class="help">{{ note }}</p><dl class="metadata"><div><dt>Started</dt><dd>{{ date(report.scan.started_at) }}</dd></div><div><dt>Finished</dt><dd>{{ date(report.scan.finished_at) }}</dd></div><div><dt>Report expires</dt><dd>{{ date(report.scan.expires_at) }}</dd></div><div><dt>Scanner</dt><dd>{{ report.scan.scanner_version }}</dd></div></dl><details><summary>Scanner capabilities</summary><pre>{{ JSON.stringify(report.capabilities,null,2) }}</pre></details></section></section></AppLayout></template>
+<template>
+    <AppLayout>
+        <Head :title="report.scan.domain" />
+        <section class="scan-heading">
+            <div class="section-title">
+                <div><p class="eyebrow">{{ t('DOMAIN CONFIGURATION REPORT') }}</p><h1>{{ report.scan.domain }}</h1><p class="muted">{{ report.assessment.overall }}<span v-if="active"> · {{ t('Observations are still arriving') }}</span></p></div>
+                <div class="actions"><Link :href="report.home_url">{{ t('New scan') }}</Link><a :href="report.export_url" class="export-link">{{ t('Export JSON ↗') }}</a></div>
+            </div>
+            <p v-if="message" class="help">{{ message }}</p>
+            <p v-if="report.scan.error" class="error" role="alert">{{ report.scan.error }}</p>
+            <ScanProgress :status="report.scan.status" :coverage="report.assessment.coverage" />
+            <div v-if="report.scan.null_mx" class="panel"><h2>{{ t('Mail is intentionally disabled') }}</h2><p class="muted">{{ t('This domain publishes a valid null MX. Incoming SMTP checks are not applicable; sender DNS policies are shown independently.') }}</p></div>
+            <SummaryCards :assessment="report.assessment" />
+            <div class="section-title"><h2>{{ t('DNS & domain policies') }}</h2><span class="help">{{ t(report.domain_findings.length === 1 ? ':count observation' : ':count observations', {count: report.domain_findings.length}) }}</span></div>
+            <p v-if="!report.domain_findings.length" class="muted">{{ t('Waiting for DNS discovery and policy checks.') }}</p>
+            <FindingCard v-for="finding in report.domain_findings" :key="finding.key + finding.scope" :finding="finding" />
+            <div v-if="report.endpoints.length" class="section-title"><h2>{{ t('Mail endpoints') }}</h2><span class="help">{{ t('All priorities · both address families') }}</span></div>
+            <EndpointMatrix v-if="report.endpoints.length" :endpoints="report.endpoints" />
+            <section v-for="(endpoint, index) in report.endpoints" :id="'endpoint-' + index" :key="endpoint.mx + endpoint.ip" class="endpoint">
+                <div class="section-title"><div><h2>{{ endpoint.mx }}</h2><div class="tags"><span class="badge">{{ t('Priority :priority', {priority: endpoint.preference}) }}</span><span class="badge">IPv{{ endpoint.family }}</span><span class="mono">{{ endpoint.ip }}</span></div></div><StatusBadge :outcome="endpoint.status" /></div>
+                <p v-if="!endpoint.findings.length" class="muted">{{ t(endpoint.status === 'expired' || endpoint.status === 'failed' ? 'No endpoint observations returned.' : 'Waiting for this address to be inspected.') }}</p>
+                <FindingCard v-for="finding in endpoint.findings" :key="finding.key + finding.scope" :finding="finding" />
+            </section>
+            <section class="panel report-notes">
+                <h2>{{ t('About these observations') }}</h2><p v-for="note in report.limitations" :key="note" class="help">{{ note }}</p>
+                <dl class="metadata"><div><dt>{{ t('Started') }}</dt><dd>{{ date(report.scan.started_at) }}</dd></div><div><dt>{{ t('Finished') }}</dt><dd>{{ date(report.scan.finished_at) }}</dd></div><div><dt>{{ t('Report expires') }}</dt><dd>{{ date(report.scan.expires_at) }}</dd></div><div><dt>{{ t('Scanner') }}</dt><dd>{{ report.scan.scanner_version }}</dd></div></dl>
+                <details><summary>{{ t('Scanner capabilities') }}</summary><pre>{{ JSON.stringify(report.capabilities, null, 2) }}</pre></details>
+            </section>
+        </section>
+    </AppLayout>
+</template>
