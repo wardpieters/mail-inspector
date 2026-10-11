@@ -4,6 +4,7 @@ namespace App\Mail\Smtp;
 
 use App\Mail\Value\ScanBudget;
 use App\Mail\Value\SmtpReply;
+use App\Mail\Value\TlsObservation;
 
 class StreamSmtpSession implements SmtpSession
 {
@@ -60,13 +61,13 @@ class StreamSmtpSession implements SmtpSession
                 throw new \RuntimeException('SMTP reply timed out.');
             }
 
-return $part === false ? '' : $part;
+            return $part === false ? '' : $part;
         });
         foreach ($reply->lines as $line) {
             $this->record('server', $reply->code.' '.$line);
         }
 
-return $reply;
+        return $reply;
     }
 
     private function record(string $direction, string $line): void
@@ -78,6 +79,36 @@ return $reply;
             $this->log[] = ['direction' => $direction, 'line' => $line];
             $this->bytes += strlen($line);
         }
+    }
+
+    public function startTls(string $mx, ?int $protocolMask = null): TlsObservation
+    {
+        $this->timeout();
+        stream_context_set_option($this->socket, 'ssl', 'peer_name', $mx);
+        $error = null;
+        set_error_handler(function (int $severity, string $message) use (&$error): bool {
+            $error = $message;
+
+            return true;
+        });
+        try {
+            $success = stream_socket_enable_crypto($this->socket, true, $protocolMask ?? (STREAM_CRYPTO_METHOD_TLSv1_2_CLIENT | STREAM_CRYPTO_METHOD_TLSv1_3_CLIENT));
+        } finally {
+            restore_error_handler();
+        }
+        if ($success !== true) {
+            return new TlsObservation(false, error: substr($error ?? 'TLS handshake failed.', 0, 500), clientCanOffer: ! preg_match('/no ciphers|no protocols|unsupported protocol|no suitable signature/i', $error ?? ''));
+        }
+        $crypto = stream_get_meta_data($this->socket)['crypto'] ?? [];
+        $options = stream_context_get_options($this->socket);
+        $chain = [];
+        foreach (array_slice($options['ssl']['peer_certificate_chain'] ?? [$options['ssl']['peer_certificate'] ?? null], 0, 16) as $cert) {
+            if ($cert && openssl_x509_export($cert, $pem)) {
+                $chain[] = $pem;
+            }
+        }
+
+        return new TlsObservation(true, $crypto['protocol'] ?? '', $crypto['cipher_name'] ?? '', (int) ($crypto['cipher_bits'] ?? 0), $chain);
     }
 
     public function transcript(): array

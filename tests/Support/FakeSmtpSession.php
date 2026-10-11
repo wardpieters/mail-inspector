@@ -4,6 +4,7 @@ namespace Tests\Support;
 
 use App\Mail\Smtp\SmtpSession;
 use App\Mail\Value\SmtpReply;
+use App\Mail\Value\TlsObservation;
 
 class FakeSmtpSession implements SmtpSession
 {
@@ -12,6 +13,11 @@ class FakeSmtpSession implements SmtpSession
     public bool $closed = false;
 
     public function __construct(public array $script = []) {}
+
+    public function startTls(string $mx, ?int $protocolMask = null): TlsObservation
+    {
+        return new TlsObservation(true, 'TLSv1.3', 'TLS_AES_256_GCM_SHA384', 256);
+    }
 
     public function greeting(): SmtpReply
     {

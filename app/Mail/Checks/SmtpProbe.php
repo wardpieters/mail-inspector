@@ -4,6 +4,7 @@ namespace App\Mail\Checks;
 
 use App\Mail\Smtp\SmtpSession;
 use App\Mail\Smtp\SmtpSessionFactory;
+use App\Mail\Smtp\TlsNegotiator;
 use App\Mail\Value\EndpointTarget;
 use App\Mail\Value\Finding;
 use App\Mail\Value\ProbeResult;
@@ -12,7 +13,7 @@ use App\Mail\Value\TlsObservation;
 
 class SmtpProbe
 {
-    public function __construct(private SmtpSessionFactory $factory) {}
+    public function __construct(private SmtpSessionFactory $factory, private TlsNegotiator $negotiator) {}
 
     public function probe(EndpointTarget $target, ScanBudget $budget): ProbeResult
     {
@@ -44,6 +45,20 @@ class SmtpProbe
                 return $this->finish($findings, $session, $connected, $capabilities, $tls);
             }
             $capabilities = $extended ? $ehlo->capabilities() : [];
+            if (in_array('STARTTLS', $capabilities, true)) {
+                $tls = $this->negotiator->negotiate($session, $target, $budget);
+                $findings[] = Finding::make('tls', $tls->success ? 'pass' : 'fail', $tls->success ? 'STARTTLS negotiated' : 'STARTTLS handshake failed', 'Encryption is assessed independently of certificate trust.', $tls->jsonSerialize(), $tls->success ? null : 'Review STARTTLS configuration.', $tls->success ? 'none' : 'high');
+                if (! $tls->success) {
+                    return $this->finish($findings, $session, $connected, $capabilities, $tls);
+                }
+                $postTls = $session->command('EHLO '.$helo);
+                if ($postTls->code !== 250) {
+                    throw new \RuntimeException('EHLO after TLS was rejected.');
+                }
+                $capabilities = $postTls->capabilities();
+            } else {
+                $findings[] = Finding::make('tls', 'fail', 'STARTTLS is not advertised', 'SMTP encryption could not be established.', [], 'Enable STARTTLS on port 25.', 'high');
+            }
             $sender = (string) config('mail_scan.sender', '');
             if ($sender !== '' && ! filter_var($sender, FILTER_VALIDATE_EMAIL)) {
                 throw new \RuntimeException('Scanner sender identity is invalid.');
@@ -93,15 +108,15 @@ class SmtpProbe
     private function finish(array $findings, ?SmtpSession $session, bool $connected, array $capabilities, ?TlsObservation $tls): ProbeResult
     {
         $keys = array_column(array_map(fn ($f) => $f->jsonSerialize(), $findings), 'key');
-        foreach (['answer', 'helo', 'from', 'open_relay'] as $key) {
+        foreach (['answer', 'helo', 'tls', 'from', 'open_relay'] as $key) {
             if (! in_array($key, $keys, true)) {
-                $findings[] = Finding::make($key,'skipped','Check could not run','A prerequisite SMTP step did not complete.');
+                $findings[] = Finding::make($key, 'skipped', 'Check could not run', 'A prerequisite SMTP step did not complete.');
             }
         }
         if ($session) {
             $session->close();
         }
 
-return new ProbeResult($findings,$connected,$capabilities,$tls,$session ? $session->transcript() : []);
+        return new ProbeResult($findings, $connected, $capabilities, $tls, $session ? $session->transcript() : []);
     }
 }

@@ -7,6 +7,7 @@ use App\Mail\Enums\Outcome;
 use App\Mail\Smtp\SmtpSessionFactory;
 use App\Mail\Value\EndpointTarget;
 use App\Mail\Value\ScanBudget;
+use App\Mail\Value\TlsObservation;
 use Tests\Support\FakeSmtpSession;
 use Tests\Support\FakeSmtpSessionFactory;
 use Tests\TestCase;
@@ -35,6 +36,25 @@ class SmtpProbeTest extends TestCase
         $this->app->instance(SmtpSessionFactory::class, new FakeSmtpSessionFactory($session));
         $probe = app(SmtpProbe::class)->probe(new EndpointTarget('mx.test', 0, '8.8.8.8', 4), new ScanBudget(30));
         $relay = array_values(array_filter($probe->findings, fn ($f) => $f->key === 'open_relay'))[0];
-        $this->assertSame(Outcome::Inconclusive,$relay->outcome);
+        $this->assertSame(Outcome::Inconclusive, $relay->outcome);
+    }
+
+    public function test_ehlo_runs_again_after_starttls_and_no_envelope_after_failure(): void
+    {
+        $session = new FakeSmtpSession(['greeting' => [220, ['mx.test']], 'EHLO' => [250, ['mx.test', 'STARTTLS']], 'STARTTLS' => [220, ['Begin TLS']]]);
+        $this->app->instance(SmtpSessionFactory::class, new FakeSmtpSessionFactory($session));
+        app(SmtpProbe::class)->probe(new EndpointTarget('mx.test', 0, '8.8.8.8', 4), new ScanBudget(30));
+        $verbs = array_map(fn ($c) => explode(' ', $c)[0], $session->commands);
+        $this->assertSame(2, count(array_filter($verbs, fn ($v) => $v === 'EHLO')));
+        $failed = new class(['greeting' => [220, ['mx.test']], 'EHLO' => [250, ['mx.test', 'STARTTLS']], 'STARTTLS' => [220, ['Begin TLS']]]) extends FakeSmtpSession
+        {
+            public function startTls(string $mx, ?int $protocolMask = null): TlsObservation
+            {
+                return new TlsObservation(false, error: 'Handshake failed.');
+            }
+        };
+        $this->app->instance(SmtpSessionFactory::class, new FakeSmtpSessionFactory($failed));
+        app(SmtpProbe::class)->probe(new EndpointTarget('mx.test', 0, '8.8.8.8', 4), new ScanBudget(30));
+        $this->assertNotContains('MAIL', array_map(fn ($c) => explode(' ', $c)[0], $failed->commands));
     }
 }
