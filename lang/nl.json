@@ -399,5 +399,12 @@
   "Policy requires HTTP 200; redirects are rejected.": "Het beleid vereist HTTP 200; omleidingen worden geweigerd.",
   "Unsupported policy URL.": "Niet ondersteunde beleids-URL.",
   "CNAME hop limit reached.": "Maximaal aantal CNAME-stappen bereikt.",
-  "MTA-STS duplicates": "Dubbele MTA-STS-velden"
+  "MTA-STS duplicates": "Dubbele MTA-STS-velden",
+  "Waiting for results": "Wachten op resultaten",
+  "Checking…": "Controleren…",
+  "Scan in progress": "Scan wordt uitgevoerd",
+  "Assessment incomplete": "Beoordeling onvolledig",
+  "Waiting for a scan worker": "Wachten op een scanworker",
+  "Scan activity": "Scanactiviteit",
+  "Results appear automatically as checks finish.": "Resultaten verschijnen automatisch zodra controles zijn afgerond."
 }

@@ -6,9 +6,9 @@ class ReportTranslator
 {
     public function translate(array $report): array
     {
-        $report['assessment']['overall'] = __($report['assessment']['overall']);
+        $report['assessment']['overall'] = __($report['assessment']['overall'] === 'Incomplete' ? 'Assessment incomplete' : $report['assessment']['overall']);
         foreach ($report['assessment']['dimensions'] as &$dimension) {
-            $dimension['label'] = __($dimension['label']);
+            $dimension['label'] = __($dimension['label'] === 'Incomplete' ? 'Assessment incomplete' : $dimension['label']);
         }
         $report['scan']['error'] = $this->text($report['scan']['error']);
         $report['limitations'] = array_map($this->text(...), $report['limitations']);

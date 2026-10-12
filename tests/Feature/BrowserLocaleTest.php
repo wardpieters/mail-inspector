@@ -46,7 +46,7 @@ class BrowserLocaleTest extends TestCase
             ->assertJsonPath('domain_findings.0.title', 'DNSSEC gevalideerd')
             ->assertJsonPath('domain_findings.0.explanation', 'De beheerde validerende resolver heeft dit routeringsantwoord geauthenticeerd.')
             ->assertJsonPath('domain_findings.0.evidence.reply', 'mail-inspector-accept.invalid 220 Ready')
-            ->assertJsonPath('assessment.overall', 'Onvolledig');
+            ->assertJsonPath('assessment.overall', 'Beoordeling onvolledig');
         $this->get($url, ['Accept-Language' => 'en-US'])->assertOk()->assertJsonPath('domain_findings.0.title', 'DNSSEC validated');
         $this->assertSame('DNSSEC validated', $scan->findings()->first()->title);
     }
@@ -69,6 +69,6 @@ class BrowserLocaleTest extends TestCase
             'X-Inertia-Version' => $version,
             'X-Inertia-Partial-Component' => 'Scans/Show', 'X-Inertia-Partial-Data' => 'report',
         ])->assertOk()->assertJsonPath('props.i18n.locale', 'nl')
-            ->assertJsonPath('props.report.assessment.overall', 'Onvolledig');
+            ->assertJsonPath('props.report.assessment.overall', 'Beoordeling onvolledig');
     }
 }

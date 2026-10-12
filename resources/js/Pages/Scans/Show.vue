@@ -20,18 +20,18 @@ const active = computed(() => ['queued', 'running'].includes(props.report.scan.s
         <Head :title="report.scan.domain" />
         <section class="scan-heading">
             <div class="section-title">
-                <div><p class="eyebrow">{{ t('DOMAIN CONFIGURATION REPORT') }}</p><h1>{{ report.scan.domain }}</h1><p class="muted">{{ report.assessment.overall }}<span v-if="active"> · {{ t('Observations are still arriving') }}</span></p></div>
+                <div><p class="eyebrow">{{ t('DOMAIN CONFIGURATION REPORT') }}</p><h1>{{ report.scan.domain }}</h1><p class="muted">{{ active && report.assessment.pending ? t(report.scan.status === 'queued' ? 'Waiting for results' : 'Scan in progress') : report.assessment.overall }}<span v-if="active"> · {{ t('Observations are still arriving') }}</span></p></div>
                 <div class="actions"><Link :href="report.home_url">{{ t('New scan') }}</Link><a :href="report.export_url" class="export-link">{{ t('Export JSON ↗') }}</a></div>
             </div>
             <p v-if="message" class="help">{{ message }}</p>
             <p v-if="report.scan.error" class="error" role="alert">{{ report.scan.error }}</p>
             <ScanProgress :status="report.scan.status" :coverage="report.assessment.coverage" />
             <div v-if="report.scan.null_mx" class="panel"><h2>{{ t('Mail is intentionally disabled') }}</h2><p class="muted">{{ t('This domain publishes a valid null MX. Incoming SMTP checks are not applicable; sender DNS policies are shown independently.') }}</p></div>
-            <SummaryCards :assessment="report.assessment" />
-            <div class="section-title"><h2>{{ t('DNS & domain policies') }}</h2><span class="help">{{ t(report.domain_findings.length === 1 ? ':count observation' : ':count observations', {count: report.domain_findings.length}) }}</span></div>
+            <SummaryCards :assessment="report.assessment" :status="report.scan.status" />
+            <div class="section-title report-section-title"><h2>{{ t('DNS & domain policies') }}</h2><span class="help">{{ t(report.domain_findings.length === 1 ? ':count observation' : ':count observations', {count: report.domain_findings.length}) }}</span></div>
             <p v-if="!report.domain_findings.length" class="muted">{{ t('Waiting for DNS discovery and policy checks.') }}</p>
             <FindingCard v-for="finding in report.domain_findings" :key="finding.key + finding.scope" :finding="finding" />
-            <div v-if="report.endpoints.length" class="section-title"><h2>{{ t('Mail endpoints') }}</h2><span class="help">{{ t('All priorities · both address families') }}</span></div>
+            <div v-if="report.endpoints.length" class="section-title report-section-title"><h2>{{ t('Mail endpoints') }}</h2><span class="help">{{ t('All priorities · both address families') }}</span></div>
             <EndpointMatrix v-if="report.endpoints.length" :endpoints="report.endpoints" />
             <section v-for="(endpoint, index) in report.endpoints" :id="'endpoint-' + index" :key="endpoint.mx + endpoint.ip" class="endpoint">
                 <div class="section-title"><div><h2>{{ endpoint.mx }}</h2><div class="tags"><span class="badge">{{ t('Priority :priority', {priority: endpoint.preference}) }}</span><span class="badge">IPv{{ endpoint.family }}</span><span class="mono">{{ endpoint.ip }}</span></div></div><StatusBadge :outcome="endpoint.status" /></div>

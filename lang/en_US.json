@@ -399,5 +399,12 @@
   "Policy requires HTTP 200; redirects are rejected.": "Policy requires HTTP 200; redirects are rejected.",
   "Unsupported policy URL.": "Unsupported policy URL.",
   "CNAME hop limit reached.": "CNAME hop limit reached.",
-  "MTA-STS duplicates": "MTA-STS duplicates"
+  "MTA-STS duplicates": "MTA-STS duplicates",
+  "Waiting for results": "Waiting for results",
+  "Checking…": "Checking…",
+  "Scan in progress": "Scan in progress",
+  "Assessment incomplete": "Assessment incomplete",
+  "Waiting for a scan worker": "Waiting for a scan worker",
+  "Scan activity": "Scan activity",
+  "Results appear automatically as checks finish.": "Results appear automatically as checks finish."
 }
