@@ -7,6 +7,7 @@ import FindingCard from '../../Components/FindingCard.vue';
 import EndpointMatrix from '../../Components/EndpointMatrix.vue';
 import ScanProgress from '../../Components/ScanProgress.vue';
 import StatusBadge from '../../Components/StatusBadge.vue';
+import AssessmentLabel from '../../Components/AssessmentLabel.vue';
 import { useScanPolling } from '../../Composables/useScanPolling';
 import { useTranslations } from '../../Composables/useTranslations';
 import type { Report } from '../../types/report';
@@ -20,7 +21,7 @@ const active = computed(() => ['queued', 'running'].includes(props.report.scan.s
         <Head :title="report.scan.domain" />
         <section class="scan-heading">
             <div class="section-title">
-                <div><p class="eyebrow">{{ t('DOMAIN CONFIGURATION REPORT') }}</p><h1>{{ report.scan.domain }}</h1><p class="muted">{{ active && report.assessment.pending ? t(report.scan.status === 'queued' ? 'Waiting for results' : 'Scan in progress') : report.assessment.overall }}<span v-if="active"> · {{ t('Observations are still arriving') }}</span></p></div>
+                <div><p class="eyebrow">{{ t('DOMAIN CONFIGURATION REPORT') }}</p><h1>{{ report.scan.domain }}</h1><p class="muted"><span v-if="active && report.assessment.pending">{{ t(report.scan.status === 'queued' ? 'Waiting for results' : 'Scan in progress') }}</span><AssessmentLabel v-else :label="report.assessment.overall" /><span v-if="active"> · {{ t('Observations are still arriving') }}</span></p></div>
                 <div class="actions"><Link :href="report.home_url">{{ t('New scan') }}</Link><a :href="report.export_url" class="export-link">{{ t('Export JSON ↗') }}</a></div>
             </div>
             <p v-if="message" class="help">{{ message }}</p>
