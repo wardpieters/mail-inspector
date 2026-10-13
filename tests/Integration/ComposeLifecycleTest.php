@@ -63,19 +63,34 @@ class ComposeLifecycleTest extends TestCase
         }
     }
 
-    public function test_reports_and_application_key_survive_container_restarts(): void
+    public function test_reports_and_application_key_survive_restarts_and_backend_address_changes(): void
     {
-        $process = $this->compose(['up', '-d', '--wait']);
+        $subnet = '10.203.'.random_int(1, 254);
+        $configuration = "networks:\n  services:\n    ipam:\n      config:\n        - subnet: {$subnet}.0/24\nservices:\n  app:\n    networks:\n      services:\n        ipv4_address: {$subnet}.20\n      egress: {}\n";
+        file_put_contents($this->overrideFile, $configuration);
+        $process = $this->compose(['up', '-d', '--wait'], true);
         $this->assertTrue($process->isSuccessful(), substr($process->getErrorOutput(), -1500));
         $keyHash = hash_file('sha256', $this->environmentFile);
         $publicId = 'fd7310cd-261e-42b0-82f2-788cc92e02c1';
         $code = 'require "vendor/autoload.php"; $app=require "bootstrap/app.php"; $app->make(Illuminate\\Contracts\\Console\\Kernel::class)->bootstrap(); App\\Models\\Scan::create(["public_id"=>"'.$publicId.'","domain"=>"fixture.test","selectors"=>[],"status"=>"completed","deadline"=>now()]);';
-        $this->assertTrue($this->compose(['exec', '-T', 'app', 'php', '-r', $code])->isSuccessful());
-        $this->assertTrue($this->compose(['restart', 'app', 'worker', 'scheduler'])->isSuccessful());
-        $process = $this->compose(['up', '-d', '--wait']);
+        $this->assertTrue($this->compose(['exec', '-T', 'app', 'php', '-r', $code], true)->isSuccessful());
+        $this->assertTrue($this->compose(['restart', 'app', 'worker', 'scheduler'], true)->isSuccessful());
+        $process = $this->compose(['up', '-d', '--wait'], true);
         $this->assertTrue($process->isSuccessful());
-        $port = trim($this->compose(['port', 'web', '80'])->getOutput());
-        $content = file_get_contents('http://'.$port.'/scans/'.$publicId.'/export');
+        file_put_contents($this->overrideFile, str_replace("{$subnet}.20", "{$subnet}.21", $configuration));
+        $process = $this->compose(['up', '-d', '--force-recreate', '--no-deps', '--wait', 'app'], true);
+        $this->assertTrue($process->isSuccessful(), substr($process->getErrorOutput(), -1500));
+        $port = trim($this->compose(['port', 'web', '80'], true)->getOutput());
+        $content = false;
+        $deadline = microtime(true) + 15;
+        do {
+            $content = @file_get_contents('http://'.$port.'/scans/'.$publicId.'/export', false, stream_context_create(['http' => ['timeout' => 2]]));
+            if (is_string($content)) {
+                break;
+            }
+            usleep(250000);
+        } while (microtime(true) < $deadline);
+        $this->assertIsString($content, $this->compose(['logs', '--no-color', '--tail=30', 'app', 'web'], true)->getOutput());
         $this->assertSame('fixture.test', json_decode($content, true, 512, JSON_THROW_ON_ERROR)['scan']['domain']);
         $this->assertTrue(hash_equals($keyHash, hash_file('sha256', $this->environmentFile)));
     }

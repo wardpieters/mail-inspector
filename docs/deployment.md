@@ -57,7 +57,7 @@ compose.dev.yaml bind-mounts the source and serves Vite on loopback port 5173; i
 The test project uses throwaway PostgreSQL tmpfs and Redis, with no production environment secrets. For PHP 8.4 container tests:
 
 ```sh
-docker compose -p mail-inspector-test -f compose.test.yaml run --rm php-test vendor/bin/phpunit tests/Integration
+docker compose -p mail-inspector-test -f compose.test.yaml run --rm --user "$(id -u):$(id -g)" php-test vendor/bin/phpunit tests/Integration
 docker compose -p mail-inspector-test -f compose.test.yaml down -v
 ```
 

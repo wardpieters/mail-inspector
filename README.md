@@ -71,7 +71,7 @@ vendor/bin/phpunit
 npm run test:unit -- --run
 npm run typecheck
 npm run build
-docker compose -p mail-inspector-test -f compose.test.yaml run --rm php-test vendor/bin/phpunit tests/Integration
+docker compose -p mail-inspector-test -f compose.test.yaml run --rm --user "$(id -u):$(id -g)" php-test vendor/bin/phpunit tests/Integration
 ```
 
 The integration suite uses isolated fixture services and generated certificates. A cached-service host alternative is documented in deployment.md. Unit tests use deterministic DNS/SMTP fakes. Production has no request-controlled private-address or port bypass.

@@ -92,7 +92,7 @@ jobs:
           cache-from: type=gha,scope=unbound
           cache-to: type=gha,mode=max,scope=unbound
       - name: SMTP, DNSSEC, Redis and PostgreSQL fixtures
-        run: docker compose -p mail-ci-fixtures -f compose.test.yaml run --rm php-test vendor/bin/phpunit tests/Integration
+        run: docker compose -p mail-ci-fixtures -f compose.test.yaml run --rm --user "$(id -u):$(id -g)" php-test vendor/bin/phpunit tests/Integration
       - name: Migration gating and persistence
         env:
           MAIL_TEST_COMPOSE: 'true'
