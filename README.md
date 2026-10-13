@@ -32,6 +32,25 @@ docker compose -f compose.yaml -f compose.hosted.yaml -f compose.ipv6.yaml up --
 
 A hosted scanner needs a provider that permits outbound port 25. Compose does not publish an inbound SMTP port or unblock provider restrictions. Put the web service behind an HTTPS reverse proxy and configure trusted proxies and secure cookies. See [deployment and operations](docs/deployment.md).
 
+## Published container images
+
+GitHub Actions tests PHP 8.4/8.5, the frontend, SMTP/DNS fixtures, and Compose startup before publishing AMD64 and ARM64 images to GHCR:
+
+- `ghcr.io/wardpieters/mail-tester`: PHP application, migrations, queue workers and scheduler, with different startup commands.
+- `ghcr.io/wardpieters/mail-tester-web`: Nginx and compiled frontend assets.
+- `ghcr.io/wardpieters/mail-tester-unbound`: validating DNS resolver.
+
+All images from a release use the same tag. `latest` and `main` track verified builds on main; `sha-<full commit SHA>` pins a build. Version tags such as `v1.0.0` publish `1.0.0`. Builds include provenance and SBOM attestations.
+
+To deploy prebuilt images, prepare `.env` as above, authenticate to GHCR if the packages are private, then run:
+
+```sh
+docker compose -f compose.yaml -f compose.registry.yaml pull
+docker compose -f compose.yaml -f compose.registry.yaml up -d --wait
+```
+
+Set `MAIL_IMAGE_TAG` to a commit tag for a pinned deployment. Add the hosted and IPv6 overrides after the registry override when needed. See [registry access and upgrades](docs/deployment.md#registry-images) for details.
+
 ## Local development and tests
 
 PHP 8.4+ with intl, sockets, PDO SQLite/PostgreSQL, Redis, cURL and OpenSSL; Composer 2 and Node 24.

@@ -33,6 +33,23 @@ docker compose up -d --force-recreate app web worker scheduler
 
 Do not use down -v on a deployment with reports you want to keep. PostgreSQL, Redis queues/AOF, app storage, and resolver trust-anchor state use named volumes. Use pg_dump through docker compose exec -T postgres for a consistent database backup and restore it on an isolated deployment before relying on it. APP_KEY changes invalidate encrypted sessions.
 
+## Registry images
+
+Use `-f compose.yaml -f compose.registry.yaml` for every Compose command when deploying GHCR images. The override removes local builds and selects the published PHP, web and resolver images. PostgreSQL and Redis continue using their upstream images. All three application images support `linux/amd64` and `linux/arm64` and share a release tag; pin `MAIL_IMAGE_TAG=sha-<full commit SHA>` in `.env` for reproducible upgrades.
+
+Private packages require a GitHub personal access token (classic) with `read:packages` and access to the repository. Authenticate interactively with `docker login ghcr.io -u <GitHub username>`; paste the token at the password prompt. Keep tokens out of `.env`, shell history and Compose files. Repository and package visibility are managed independently; this publication preserves the repository's existing visibility.
+
+For a registry upgrade, back up the database and `.env`, select the desired tag, then:
+
+```sh
+docker compose -f compose.yaml -f compose.registry.yaml stop worker scheduler
+docker compose -f compose.yaml -f compose.registry.yaml pull
+docker compose -f compose.yaml -f compose.registry.yaml run --rm migrate
+docker compose -f compose.yaml -f compose.registry.yaml up -d --force-recreate --wait
+```
+
+The PHP image serves PHP-FPM by default. Compose overrides its command for migrations, queue workers and the scheduler. The web image serves the same compiled frontend build through Nginx. Keep PHP and web on the same release tag so their Vite manifest and assets match.
+
 ## Development and isolated tests
 
 compose.dev.yaml bind-mounts the source and serves Vite on loopback port 5173; install composer dependencies on the host first. Run with -f compose.yaml -f compose.dev.yaml and use localhost consistently for Vite. Production images embed identical compiled assets/manifests in PHP and Nginx.
@@ -50,7 +67,7 @@ If registry access prevents PHP image builds but cached PostgreSQL/Redis are ava
 docker compose -p mail-inspector-test -f compose.test.yaml -f compose.test.host.yaml up -d redis-test postgres-test
 docker compose -p mail-inspector-test -f compose.test.yaml -f compose.test.host.yaml port redis-test 6379
 # Use the printed port:
-MAIL_TEST_INTEGRATION=true REDIS_HOST=127.0.0.1 REDIS_PORT=<port> vendor/bin/phpunit tests/Integration/ProbePermitsTest.php
+MAIL_TEST_INTEGRATION=true REDIS_HOST=127.0.0.1 REDIS_PASSWORD=null REDIS_PORT=<port> vendor/bin/phpunit tests/Integration/ProbePermitsTest.php
 ```
 
 No production private-target guard is disabled. Local SMTP fixture connections are injected only by tests. Run scripts/compose-smoke.sh on a host with image registry access to verify startup/migrations/dependencies and scanner diagnostics. The smoke script does not delete volumes or submit an unsolicited public-domain scan.

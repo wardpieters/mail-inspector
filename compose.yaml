@@ -105,6 +105,7 @@ services:
       timeout: 5s
       retries: 15
   unbound:
+    image: mail-inspector-unbound:local
     build: {context: docker/unbound}
     volumes: [resolver_state:/var/lib/unbound]
     networks: [services, egress]
