@@ -19,6 +19,54 @@ class ScanSubmissionTest extends TestCase
         Queue::fake();
     }
 
+    #[TestWith([true])]
+    #[TestWith([false])]
+    public function test_submission_respects_public_overview_visibility(bool $hidden): void
+    {
+        $this->withoutVite();
+
+        $this->post('/scans', ['domain' => 'example.com', 'hidden_from_overview' => $hidden])
+            ->assertSessionHasNoErrors()->assertRedirect();
+
+        $scan = Scan::sole();
+        $this->assertSame($hidden, $scan->hidden_from_overview);
+        $this->get('/')->assertInertia(fn (Assert $page) => $page->has('recent_scans', $hidden ? 0 : 1));
+        $this->get(route('scans.show', $scan->public_id))->assertOk();
+    }
+
+    public function test_submissions_are_public_by_default(): void
+    {
+        $this->post('/scans', ['domain' => 'example.com'])->assertRedirect();
+
+        $this->assertSame(false, Scan::sole()->hidden_from_overview);
+    }
+
+    public function test_hiding_a_reused_report_cannot_be_undone_by_another_submission(): void
+    {
+        $this->withoutVite();
+        $this->post('/scans', ['domain' => 'example.com'])->assertRedirect();
+        $scan = Scan::sole();
+
+        $this->post('/scans', ['domain' => 'example.com', 'hidden_from_overview' => true])
+            ->assertRedirect(route('scans.show', $scan->public_id));
+        $this->assertTrue($scan->fresh()->hidden_from_overview);
+        $this->post('/scans', ['domain' => 'example.com', 'hidden_from_overview' => false])
+            ->assertRedirect(route('scans.show', $scan->public_id));
+
+        $this->assertDatabaseCount('scans', 1);
+        $this->assertTrue($scan->fresh()->hidden_from_overview);
+        $this->get('/')->assertInertia(fn (Assert $page) => $page->has('recent_scans', 0));
+    }
+
+    public function test_invalid_visibility_is_rejected_without_creating_a_scan(): void
+    {
+        $this->post('/scans', ['domain' => 'example.com', 'hidden_from_overview' => 'invalid'])
+            ->assertSessionHasErrors('hidden_from_overview');
+
+        $this->assertDatabaseCount('scans', 0);
+        Queue::assertNothingPushed();
+    }
+
     public function test_empty_selector_text_submits_without_selectors(): void
     {
         $this->post('/scans', ['domain' => 'example.com', 'selectors' => ''])->assertSessionHasNoErrors()->assertRedirect();

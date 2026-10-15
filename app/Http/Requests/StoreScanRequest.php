@@ -22,7 +22,7 @@ class StoreScanRequest extends FormRequest
 
     public function rules(): array
     {
-        return ['domain' => ['required', 'string', 'max:253'], 'selectors' => ['sometimes', 'array', 'max:10'], 'selectors.*' => ['string', 'max:190']];
+        return ['hidden_from_overview' => ['sometimes', 'boolean'], 'domain' => ['required', 'string', 'max:253'], 'selectors' => ['sometimes', 'array', 'max:10'], 'selectors.*' => ['string', 'max:190']];
     }
 
     public function messages(): array

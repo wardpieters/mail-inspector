@@ -2,12 +2,15 @@
 
 namespace Tests\Feature;
 
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia as Assert;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 class PrivacyPageTest extends TestCase
 {
+    use RefreshDatabase;
+
     #[DataProvider('privacyPageSettings')]
     public function test_privacy_page_uses_the_configured_retention_and_browser_language(int $retentionDays, string $language, string $locale, string $title): void
     {

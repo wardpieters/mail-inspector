@@ -27,10 +27,10 @@ class BrowserLocaleTest extends TestCase
     public static function browserLanguages(): array
     {
         return [
-            'Dutch regional preference' => ['nl-NL,nl;q=0.9,en-US;q=0.8', 'nl', 'Te controleren domein'],
+            'Dutch regional preference' => ['nl-NL,nl;q=0.9,en-US;q=0.8', 'nl', 'Domein'],
             'US English' => ['en-US,en;q=0.9,nl;q=0.5', 'en_US', 'Domain to inspect'],
             'English regional fallback' => ['en-GB,en;q=0.9', 'en_US', 'Domain to inspect'],
-            'weighted supported preference' => ['fr;q=1,en-US;q=0.2,nl;q=0.8', 'nl', 'Te controleren domein'],
+            'weighted supported preference' => ['fr;q=1,en-US;q=0.2,nl;q=0.8', 'nl', 'Domein'],
             'unsupported language' => ['ja-JP', 'en_US', 'Domain to inspect'],
             'missing preference' => ['', 'en_US', 'Domain to inspect'],
             'explicitly rejected language' => ['nl;q=0,en-US;q=0.8', 'en_US', 'Domain to inspect'],
@@ -44,7 +44,7 @@ class BrowserLocaleTest extends TestCase
         $url = '/scans/'.$scan->public_id.'/export';
         $this->get($url, ['Accept-Language' => 'nl'])->assertOk()
             ->assertJsonPath('domain_findings.0.title', 'DNSSEC gevalideerd')
-            ->assertJsonPath('domain_findings.0.explanation', 'De beheerde validerende resolver heeft dit routeringsantwoord geauthenticeerd.')
+            ->assertJsonPath('domain_findings.0.explanation', 'De resolver van de scanner heeft dit DNS-antwoord met DNSSEC gevalideerd.')
             ->assertJsonPath('domain_findings.0.evidence.reply', 'mail-inspector-accept.invalid 220 Ready')
             ->assertJsonPath('assessment.overall', 'Beoordeling onvolledig');
         $this->get($url, ['Accept-Language' => 'en-US'])->assertOk()->assertJsonPath('domain_findings.0.title', 'DNSSEC validated');
@@ -56,7 +56,7 @@ class BrowserLocaleTest extends TestCase
         $this->postJson('/scans', ['domain' => 'user@example.com'], ['Accept-Language' => 'nl'])->assertUnprocessable()
             ->assertJsonPath('errors.domain.0', 'Voer een domeinnaam in, zonder URL of e-mailadres.');
         $this->postJson('/scans', [], ['Accept-Language' => 'nl'])->assertUnprocessable()
-            ->assertJsonPath('errors.domain.0', 'Het domein is verplicht.');
+            ->assertJsonPath('errors.domain.0', 'Vul een domeinnaam in.');
     }
 
     public function test_polling_keeps_translations_in_sync_with_a_changed_browser_preference(): void

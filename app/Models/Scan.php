@@ -14,7 +14,7 @@ class Scan extends Model
 
     protected function casts(): array
     {
-        return ['selectors' => 'array', 'status' => ScanStatus::class, 'deadline' => 'immutable_datetime', 'started_at' => 'immutable_datetime', 'finished_at' => 'immutable_datetime', 'capabilities' => 'array', 'routing_snapshot' => 'array', 'policy_snapshot' => 'array', 'summary' => 'array'];
+        return ['hidden_from_overview' => 'boolean', 'selectors' => 'array', 'status' => ScanStatus::class, 'deadline' => 'immutable_datetime', 'started_at' => 'immutable_datetime', 'finished_at' => 'immutable_datetime', 'capabilities' => 'array', 'routing_snapshot' => 'array', 'policy_snapshot' => 'array', 'summary' => 'array'];
     }
 
     public function endpoints()

@@ -16,7 +16,7 @@ class ScanController extends Controller
     public function store(StoreScanRequest $request, SubmitScan $submit): RedirectResponse
     {
         $input = ScanInput::fromRaw($request->validated('domain'), $request->validated('selectors', []));
-        $scan = $submit->submit($input);
+        $scan = $submit->submit($input, $request->boolean('hidden_from_overview'));
 
         return redirect()->route('scans.show', $scan->public_id)->with('message', $scan->wasRecentlyCreated
             ? 'Scan queued.'
