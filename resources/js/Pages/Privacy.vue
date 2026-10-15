@@ -3,7 +3,7 @@ import { Head, Link, usePage } from '@inertiajs/vue3';
 import AppLayout from '../Layouts/AppLayout.vue';
 import { useTranslations } from '../Composables/useTranslations';
 
-const props = defineProps<{retention_days: number}>();
+const props = defineProps<{retention_days: number; contact: {name: string; email: string}}>();
 const page = usePage<{navigation: {home: string; privacy: string}}>();
 const { t } = useTranslations();
 </script>
@@ -19,7 +19,7 @@ const { t } = useTranslations();
 
             <section aria-labelledby="privacy-operator">
                 <h2 id="privacy-operator">{{ t('Who is responsible') }}</h2>
-                <p>{{ t('Mail Inspector is operated by Ward Pieters, the creator of') }} <a href="https://ward.nl">ward.nl</a>. {{ t('For privacy questions or requests, email') }} <a href="mailto:mail@ward.nl">mail@ward.nl</a>.</p>
+                <p>{{ t('Mail Inspector is operated by :name.', {name: props.contact.name}) }} {{ t('For privacy questions or requests, email') }} <a :href="'mailto:' + props.contact.email">{{ props.contact.email }}</a>.</p>
             </section>
 
             <section aria-labelledby="privacy-data">
@@ -42,7 +42,7 @@ const { t } = useTranslations();
             <section aria-labelledby="privacy-cookies">
                 <h2 id="privacy-cookies">{{ t('Cookies and technical data') }}</h2>
                 <p>{{ t('The site uses essential session and security cookies to keep forms working and protect against forged requests. Your browser’s language preference selects English or Dutch. The app does not include advertising cookies or analytics trackers.') }}</p>
-                <p>{{ t('Your IP address is used to limit scan requests and prevent abuse. Depending on the session and hosting configuration, session storage and operational logs may also contain IP addresses, browser details, request information, and errors. The scan retention period above applies to reports; session, log, and backup retention depends on the hosting configuration. Contact us for details about this deployment.') }}</p>
+                <p>{{ t('Your IP address is used to limit scan requests and prevent abuse. We store operational logs, including IP addresses, user agents, request details, and errors, for 30 days, then delete them. These logs help us secure the service, investigate abuse, and diagnose faults. This is separate from the report retention period described above.') }}</p>
             </section>
 
             <section aria-labelledby="privacy-sharing">
@@ -52,7 +52,7 @@ const { t } = useTranslations();
 
             <section aria-labelledby="privacy-rights">
                 <h2 id="privacy-rights">{{ t('Your rights and contact') }}</h2>
-                <p>{{ t('Where applicable, you can request access to, correction of, or deletion of your personal data, request restriction or portability, and object to processing based on legitimate interests. Email') }} <a href="mailto:mail@ward.nl">mail@ward.nl</a> {{ t('with your request and, if relevant, the report link. Please do not post personal data in a public GitHub issue.') }}</p>
+                <p>{{ t('Where applicable, you can request access to, correction of, or deletion of your personal data, request restriction or portability, and object to processing based on legitimate interests. Email') }} <a :href="'mailto:' + props.contact.email">{{ props.contact.email }}</a> {{ t('with your request and, if relevant, the report link. Please do not post personal data in a public GitHub issue.') }}</p>
                 <p>{{ t('You can also lodge a complaint with your local data protection authority or the Dutch') }} <a href="https://www.autoriteitpersoonsgegevens.nl/">Autoriteit Persoonsgegevens</a>.</p>
             </section>
         </article>

@@ -29,6 +29,20 @@ class PrivacyPageTest extends TestCase
         ];
     }
 
+    public function test_privacy_page_uses_the_configured_contact_details(): void
+    {
+        $this->withoutVite();
+        config([
+            'privacy.contact_name' => 'Example Operator',
+            'privacy.contact_email' => 'privacy@example.org',
+        ]);
+
+        $this->get('/privacy')->assertOk()
+            ->assertInertia(fn (Assert $page) => $page->component('Privacy')
+                ->where('contact.name', 'Example Operator')
+                ->where('contact.email', 'privacy@example.org'));
+    }
+
     public function test_home_page_shares_named_navigation_links_for_the_footer(): void
     {
         $this->withoutVite();
