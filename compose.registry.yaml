@@ -1,19 +1,19 @@
 services:
   app:
-    image: ghcr.io/wardpieters/mail-tester:${MAIL_IMAGE_TAG:-latest}
+    image: ghcr.io/wardpieters/mail-inspector:${MAIL_IMAGE_TAG:-latest}
     build: !reset null
   migrate:
-    image: ghcr.io/wardpieters/mail-tester:${MAIL_IMAGE_TAG:-latest}
+    image: ghcr.io/wardpieters/mail-inspector:${MAIL_IMAGE_TAG:-latest}
     build: !reset null
   worker:
-    image: ghcr.io/wardpieters/mail-tester:${MAIL_IMAGE_TAG:-latest}
+    image: ghcr.io/wardpieters/mail-inspector:${MAIL_IMAGE_TAG:-latest}
     build: !reset null
   scheduler:
-    image: ghcr.io/wardpieters/mail-tester:${MAIL_IMAGE_TAG:-latest}
+    image: ghcr.io/wardpieters/mail-inspector:${MAIL_IMAGE_TAG:-latest}
     build: !reset null
   web:
-    image: ghcr.io/wardpieters/mail-tester-web:${MAIL_IMAGE_TAG:-latest}
+    image: ghcr.io/wardpieters/mail-inspector-web:${MAIL_IMAGE_TAG:-latest}
     build: !reset null
   unbound:
-    image: ghcr.io/wardpieters/mail-tester-unbound:${MAIL_IMAGE_TAG:-latest}
+    image: ghcr.io/wardpieters/mail-inspector-unbound:${MAIL_IMAGE_TAG:-latest}
     build: !reset null

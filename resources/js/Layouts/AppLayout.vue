@@ -17,7 +17,7 @@ useDocumentLanguage();
             <div class="footer-meta">
                 <nav class="footer-links" :aria-label="t('Footer navigation')">
                     <Link :href="page.props.navigation.privacy">{{ t('Privacy policy') }}</Link>
-                    <a href="https://github.com/wardpieters/mail-tester" target="_blank" rel="noopener noreferrer">{{ t('Open source on GitHub') }}</a>
+                    <a href="https://github.com/wardpieters/mail-inspector" target="_blank" rel="noopener noreferrer">{{ t('Open source on GitHub') }}</a>
                 </nav>
                 <p class="creator-credit">{{ t('Created by') }} <a href="https://ward.nl" target="_blank" rel="noopener noreferrer">ward.nl</a></p>
             </div>

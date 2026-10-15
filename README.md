@@ -34,9 +34,9 @@ A hosted scanner needs a provider that permits outbound port 25. Compose does no
 
 GitHub Actions tests PHP 8.4/8.5, the frontend, SMTP/DNS fixtures, and Compose startup before publishing AMD64 and ARM64 images to GHCR:
 
-- `ghcr.io/wardpieters/mail-tester`: PHP application, migrations, queue workers and scheduler, with different startup commands.
-- `ghcr.io/wardpieters/mail-tester-web`: Nginx and compiled frontend assets.
-- `ghcr.io/wardpieters/mail-tester-unbound`: validating DNS resolver.
+- `ghcr.io/wardpieters/mail-inspector`: PHP application, migrations, queue workers and scheduler, with different startup commands.
+- `ghcr.io/wardpieters/mail-inspector-web`: Nginx and compiled frontend assets.
+- `ghcr.io/wardpieters/mail-inspector-unbound`: validating DNS resolver.
 
 All images from a release use the same tag. `latest` and `main` track verified builds on main; `sha-<full commit SHA>` pins a build. Version tags such as `v1.0.0` publish `1.0.0`. Builds include provenance and SBOM attestations.
 
