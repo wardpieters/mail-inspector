@@ -72,8 +72,10 @@ jobs:
           target: runtime
           load: true
           tags: mail-inspector-app:local
-          cache-from: type=gha,scope=app
-          cache-to: type=gha,mode=max,scope=app
+          cache-from: |
+            type=gha,scope=ci-app-amd64
+            type=gha,scope=app
+          cache-to: type=gha,mode=max,scope=ci-app-amd64
       - name: Build web image
         uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:
@@ -81,16 +83,20 @@ jobs:
           target: web
           load: true
           tags: mail-inspector-web:local
-          cache-from: type=gha,scope=web
-          cache-to: type=gha,mode=max,scope=web
+          cache-from: |
+            type=gha,scope=ci-web-amd64
+            type=gha,scope=web
+          cache-to: type=gha,mode=max,scope=ci-web-amd64
       - name: Build validating resolver image
         uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:
           context: docker/unbound
           load: true
           tags: mail-inspector-unbound:local
-          cache-from: type=gha,scope=unbound
-          cache-to: type=gha,mode=max,scope=unbound
+          cache-from: |
+            type=gha,scope=ci-unbound-amd64
+            type=gha,scope=unbound
+          cache-to: type=gha,mode=max,scope=ci-unbound-amd64
       - name: SMTP, DNSSEC, Redis and PostgreSQL fixtures
         run: docker compose -p mail-ci-fixtures -f compose.test.yaml run --rm --user "$(id -u):$(id -g)" php-test vendor/bin/phpunit tests/Integration
       - name: Migration gating and persistence
