@@ -15,6 +15,13 @@ class HandleInertiaRequests extends Middleware
         $locale = app()->getLocale();
         $messages = json_decode(file_get_contents(lang_path($locale.'.json')), true, flags: JSON_THROW_ON_ERROR);
 
-        return [...parent::share($request), 'i18n' => Inertia::always(['locale' => $locale, 'messages' => $messages])];
+        return [
+            ...parent::share($request),
+            'i18n' => Inertia::always(['locale' => $locale, 'messages' => $messages]),
+            'navigation' => [
+                'home' => route('home', absolute: false),
+                'privacy' => route('privacy', absolute: false),
+            ],
+        ];
     }
 }
