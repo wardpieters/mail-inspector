@@ -2,6 +2,8 @@
 
 A self-hosted Laravel 13 / Inertia 3 / Vue 3 application for inspecting a domain's incoming mail configuration. Light and dark palettes follow the browser preference automatically.
 
+> **AI development notice:** This project was mostly created with AI, using [obra's Superpowers workflow](https://github.com/obra/superpowers). Security and long-term maintenance were taken into account throughout development.
+
 The interface, validation messages, and report text follow the browser's language preference: Dutch (`nl`) or US English (`en_US`), with US English as the fallback. Existing reports are translated when viewed; domain names, DNS records, and SMTP transcripts retain their original values.
 
 It discovers every MX priority and all A/AAAA addresses, then probes each independently on port 25. Reports cover DNSSEC, CAA, Connect, Answer, HELO, TLS, Secure, Cert, From, MTA-STS, DANE, FCRDNS, suspected open relay, SPF, selector-based DKIM, and DMARC. Evidence, remediation, coverage, public report links, and JSON export are included.
