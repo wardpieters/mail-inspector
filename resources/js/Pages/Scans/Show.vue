@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Head, Link } from '@inertiajs/vue3';
-import { computed } from 'vue';
+import { computed, ref, watch } from 'vue';
 import AppLayout from '../../Layouts/AppLayout.vue';
 import SummaryCards from '../../Components/SummaryCards.vue';
 import FindingCard from '../../Components/FindingCard.vue';
@@ -11,10 +11,34 @@ import AssessmentLabel from '../../Components/AssessmentLabel.vue';
 import { useScanPolling } from '../../Composables/useScanPolling';
 import { useTranslations } from '../../Composables/useTranslations';
 import type { Report } from '../../types/report';
-const props = defineProps<{report: Report; message?: string}>();
+const props = defineProps<{report: Report; message?: string; cooldown: {available_at: string; server_now: string}}>();
 const { t, date } = useTranslations();
 useScanPolling(computed(() => props.report.scan.status));
 const active = computed(() => ['queued', 'running'].includes(props.report.scan.status));
+const remainingSeconds = ref(0);
+const countdown = computed(() => `${Math.floor(remainingSeconds.value / 60)}:${String(remainingSeconds.value % 60).padStart(2, '0')}`);
+
+watch(() => props.cooldown, (cooldown, _previous, onCleanup) => {
+    const clockOffset = Date.parse(cooldown.server_now) - Date.now();
+    const availableAt = Date.parse(cooldown.available_at);
+    let timer: ReturnType<typeof setInterval> | undefined;
+    const update = () => {
+        remainingSeconds.value = Math.max(0, Math.ceil((availableAt - Date.now() - clockOffset) / 1000));
+        if (remainingSeconds.value === 0 && timer !== undefined) {
+            clearInterval(timer);
+        }
+    };
+
+    update();
+    if (remainingSeconds.value > 0) {
+        timer = setInterval(update, 1000);
+    }
+    onCleanup(() => {
+        if (timer !== undefined) {
+            clearInterval(timer);
+        }
+    });
+}, {immediate: true});
 </script>
 <template>
     <AppLayout>
@@ -24,6 +48,7 @@ const active = computed(() => ['queued', 'running'].includes(props.report.scan.s
                 <div><p class="eyebrow">{{ t('DOMAIN CONFIGURATION REPORT') }}</p><h1>{{ report.scan.domain }}</h1><p class="muted"><span v-if="active && report.assessment.pending">{{ t(report.scan.status === 'queued' ? 'Waiting for results' : 'Scan in progress') }}</span><AssessmentLabel v-else :label="report.assessment.overall" /><span v-if="active"> · {{ t('Observations are still arriving') }}</span></p></div>
                 <div class="actions"><Link :href="report.home_url">{{ t('New scan') }}</Link><a :href="report.export_url" class="export-link">{{ t('Export JSON ↗') }}</a></div>
             </div>
+            <p v-if="remainingSeconds > 0" class="help mono" role="timer" aria-live="off">{{ t('Scan again in :time', {time: countdown}) }}</p>
             <p v-if="message" class="help">{{ message }}</p>
             <p v-if="report.scan.error" class="error" role="alert">{{ report.scan.error }}</p>
             <ScanProgress :status="report.scan.status" :coverage="report.assessment.coverage" />
