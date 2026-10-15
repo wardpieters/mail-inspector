@@ -27,3 +27,11 @@ it('shows checking for unfinished summaries while preserving observed warnings a
     expect(wrapper.text()).toContain('Assessment incomplete');
     expect(wrapper.find('.activity-indicator').exists()).toBe(false);
 });
+
+it.each(['completed', 'partial', 'failed'])('hides the progress card for a %s scan without endpoints', async status => {
+    const wrapper = mount(ScanProgress, {props:{status:'queued',coverage:{planned:0,completed:0,pending:0,failed:0,omitted:0,incomplete:false,ipv4:0,ipv6:0,not_run:0}}});
+    expect(wrapper.find('.progress-panel').exists()).toBe(true);
+
+    await wrapper.setProps({status});
+    expect(wrapper.find('.progress-panel').exists()).toBe(false);
+});

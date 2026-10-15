@@ -10,7 +10,7 @@ const percent = computed(() => props.coverage.planned ? Math.round(100 * (props.
 const phase = computed(() => props.status === 'queued' ? 'Waiting for a scan worker' : (props.coverage.planned ? 'Checking mail endpoints' : 'Discovering DNS and mail routes'));
 </script>
 <template>
-    <div :class="['panel', 'progress-panel', {'is-active': active}]">
+    <div v-if="active || coverage.planned" :class="['panel', 'progress-panel', {'is-active': active}]">
         <p class="scan-phase" role="status" aria-live="polite">
             <span v-if="active" class="activity-indicator" aria-hidden="true"></span>
             <strong v-if="active">{{ t(phase) }}</strong>

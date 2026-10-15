@@ -1,7 +1,7 @@
 import { mount, type VueWrapper } from '@vue/test-utils';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import Show from './Show.vue';
-import type { Report } from '../../types/report';
+import type { Endpoint, Report } from '../../types/report';
 
 vi.mock('@inertiajs/vue3', async importOriginal => ({
     ...await importOriginal<typeof import('@inertiajs/vue3')>(),
@@ -24,7 +24,7 @@ afterEach(() => {
     vi.useRealTimers();
 });
 
-function mountReport(availableAt = '2026-10-15T12:01:00Z'): VueWrapper {
+function mountReport(availableAt = '2026-10-15T12:01:00Z', endpoints: Endpoint[] = []): VueWrapper {
     const report: Report = {
         scan: {
             public_id: '00000000-0000-4000-8000-000000000001', domain: 'example.com',
@@ -37,7 +37,7 @@ function mountReport(availableAt = '2026-10-15T12:01:00Z'): VueWrapper {
             overall: 'No issues observed', pending: false, dimensions: {},
             coverage: { planned: 0, completed: 0, pending: 0, failed: 0, omitted: 0, incomplete: false, ipv4: 0, ipv6: 0, not_run: 0 },
         },
-        domain_findings: [], endpoints: [], capabilities: {},
+        domain_findings: [], endpoints, capabilities: {},
         export_url: '/scans/report/export', home_url: '/', limitations: [],
     };
     return mount(Show, {
@@ -74,4 +74,47 @@ it('updates the countdown for another report and cleans up when leaving the page
     wrapper.unmount();
     wrapper = undefined;
     expect(vi.getTimerCount()).toBe(0);
+});
+
+function mailEndpoint(ip: string): Endpoint {
+    return {
+        mx: 'example-com.mail.protection.outlook.com', preference: 10, ip, family: 4,
+        status: 'completed', discovery_secure: false,
+        findings: [{key: 'connect', scope: ip, outcome: 'pass', severity: 'info', title: 'SMTP connection succeeded', explanation: 'The server accepted a connection.', recommendation: null, evidence: {}, duration_ms: 10}],
+    };
+}
+
+it('keeps endpoint summaries visible with findings collapsed by default and allows toggling', async () => {
+    wrapper = mountReport(undefined, [mailEndpoint('192.0.2.1'), mailEndpoint('192.0.2.2')]);
+    const endpoints = wrapper.findAll<HTMLDetailsElement>('details.endpoint');
+    expect(endpoints).toHaveLength(2);
+    expect(endpoints.every(endpoint => !endpoint.element.open)).toBe(true);
+    expect(endpoints[0].get('summary').text()).toContain('192.0.2.1');
+    expect(endpoints[0].get('summary').text()).toContain('Completed');
+
+    endpoints[0].get('summary').element.click();
+    expect(endpoints[0].element.open).toBe(true);
+    expect(endpoints[1].element.open).toBe(false);
+    expect(endpoints[0].text()).toContain('SMTP connection succeeded');
+    endpoints[0].get('summary').element.click();
+    expect(endpoints[0].element.open).toBe(false);
+});
+
+it('opens the matching endpoint from the comparison table and preserves it through report updates', async () => {
+    wrapper = mountReport(undefined, [mailEndpoint('192.0.2.1'), mailEndpoint('192.0.2.2')]);
+    await wrapper.get('.scroll-table a[href="#endpoint-1"]').trigger('click');
+    const endpoints = wrapper.findAll<HTMLDetailsElement>('details.endpoint');
+    expect(endpoints).toHaveLength(2);
+    expect(endpoints[0].element.open).toBe(false);
+    expect(endpoints[1].element.open).toBe(true);
+
+    const { report } = wrapper.props() as {report: Report};
+    await wrapper.setProps({report: {...report, endpoints: report.endpoints.map(endpoint => ({...endpoint, status: 'running'}))}});
+    expect(endpoints[1].element.open).toBe(true);
+});
+
+it('does not show endpoint disclosures when there are no endpoints', () => {
+    wrapper = mountReport();
+    expect(wrapper.find('details.endpoint').exists()).toBe(false);
+    expect(wrapper.find('.scroll-table').exists()).toBe(false);
 });
