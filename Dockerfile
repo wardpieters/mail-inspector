@@ -1,5 +1,5 @@
-FROM php:8.4-fpm-bookworm AS php-base
-RUN apt-get update && apt-get install -y --no-install-recommends libonig-dev libicu-dev libpq-dev libzip-dev libcurl4-openssl-dev unzip ca-certificates openssl && docker-php-ext-install mbstring intl pdo_pgsql sockets pcntl zip opcache && pecl install redis && docker-php-ext-enable redis && rm -rf /var/lib/apt/lists/*
+FROM php:8.5.12-fpm-bookworm AS php-base
+RUN apt-get update && apt-get install -y --no-install-recommends libonig-dev libicu-dev libpq-dev libzip-dev libcurl4-openssl-dev unzip ca-certificates openssl && docker-php-ext-install mbstring intl pdo_pgsql sockets pcntl zip && pecl install redis && docker-php-ext-enable redis && rm -rf /var/lib/apt/lists/*
 COPY docker/php/production.ini /usr/local/etc/php/conf.d/production.ini
 WORKDIR /app
 

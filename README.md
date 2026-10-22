@@ -32,7 +32,7 @@ A hosted scanner needs a provider that permits outbound port 25. Compose does no
 
 ## Published container images
 
-GitHub Actions tests PHP 8.4/8.5, the frontend, SMTP/DNS fixtures, and Compose startup before publishing AMD64 and ARM64 images to GHCR:
+GitHub Actions tests PHP 8.5.12, the frontend, SMTP/DNS fixtures, and Compose startup before publishing AMD64 and ARM64 images to GHCR:
 
 - `ghcr.io/wardpieters/mail-inspector`: PHP application, migrations, queue workers and scheduler, with different startup commands.
 - `ghcr.io/wardpieters/mail-inspector-web`: Nginx and compiled frontend assets.
@@ -51,7 +51,7 @@ Set `MAIL_IMAGE_TAG` to a commit tag for a pinned deployment. Add the hosted and
 
 ## Local development and tests
 
-PHP 8.4+ with intl, sockets, PDO SQLite/PostgreSQL, Redis, cURL and OpenSSL; Composer 2 and Node 24.
+PHP 8.5.12+ with intl, sockets, PDO SQLite/PostgreSQL, Redis, cURL and OpenSSL; Composer 2 and Node 24.
 
 ```sh
 composer install

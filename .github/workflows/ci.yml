@@ -16,7 +16,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        php: ['8.4', '8.5']
+        php: ['8.5.12']
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2.40.0
@@ -30,7 +30,6 @@ jobs:
       - name: PHP tests
         run: php artisan test
       - name: PHP formatting
-        if: matrix.php == '8.4'
         run: |
           vendor/bin/pint --format agent
           git diff --exit-code -- '*.php'
@@ -58,7 +57,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2.40.0
         with:
-          php-version: '8.4'
+          php-version: '8.5.12'
           extensions: mbstring, intl, sockets, pcntl, redis, pdo_sqlite, pdo_pgsql, curl, zip
           coverage: none
           tools: composer:v2
