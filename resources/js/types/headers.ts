@@ -1,0 +1,16 @@
+export type HeaderIssue = { code: string; fieldIds: number[]; params: Record<string, string | number> };
+export type HeaderField = { id: number; name: string; lookupName: string; raw: string; value: string; displayValue: string; startLine: number; endLine: number };
+export type HeaderDocument = { rawHeaders: string; fields: HeaderField[]; malformedLines: { line: number; raw: string }[]; warnings: HeaderIssue[] };
+export type ParseError = { code: 'empty' | 'no_fields' | 'byte_limit' | 'line_limit' | 'field_limit' };
+export type ParseResult = { document: HeaderDocument; error: null } | { document: null; error: ParseError };
+export type HeaderTimestamp = { raw: string; iso: string | null; epochMs: number | null };
+export type ReceivedHop = { fieldId: number; hop: number; from: string | null; by: string | null; protocol: string | null; id: string | null; for: string | null; ips: string[]; timestamp: HeaderTimestamp; delayMs: number | null; delayPercent: number | null };
+export type HopAnalysis = { hops: ReceivedHop[]; observedTransitMs: number | null; warnings: HeaderIssue[] };
+export type AuthObservation = { fieldId: number; reporter: string | null; instance: number | null; kind: 'result' | 'signature' | 'seal'; method: string; result: string | null; properties: { name: string; value: string }[]; raw: string };
+export type AuthAnalysis = { observations: AuthObservation[]; warnings: HeaderIssue[] };
+export type SpamFamily = 'rspamd' | 'spamassassin-compatible' | 'microsoft' | 'barracuda' | 'proofpoint' | 'ironport' | 'generic';
+export type SpamObservation = { family: SpamFamily; sourceFieldIds: number[]; values: { name: string; value: string; explanationKey: string | null }[]; score: number | null; threshold: number | null; action: string | null; verdict: string | null; metric: string | null; rules: { name: string; score: number | null; options: string | null }[]; unknownFragments: string[] };
+export type SpamAnalysis = { observations: SpamObservation[]; warnings: HeaderIssue[] };
+export type HeaderAnalysis = { document: HeaderDocument; summary: Record<string, HeaderField[]>; delivery: HopAnalysis; authentication: AuthAnalysis; filtering: SpamAnalysis; warnings: HeaderIssue[] };
+export type AnalysisResult = { analysis: HeaderAnalysis; error: null } | { analysis: null; error: ParseError };
+export type HeaderText = (key: string, replacements?: Record<string, string | number>) => string;
