@@ -2,7 +2,7 @@
 
 Date: 22 October 2026
 
-Status: Written specification for review. The user approved the proposed design with the addition of Rspamd and other antispam headers. Implementation planning follows review of this document.
+Status: Approved by the user on 23 October 2026, including Rspamd and other antispam headers. This specification is the basis for the implementation plan.
 
 ## 1. Intent and success criteria
 
