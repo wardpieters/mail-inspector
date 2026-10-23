@@ -73,11 +73,11 @@ it('shows reported outcomes and distinct reporters, explicit none and manual-cop
     wrapper.unmount();
 });
 it('translates controls while leaving evidence unchanged', async () => {
-    page.props.i18n = { locale: 'nl', messages: { 'Message Header Analyzer': 'Berichtkoppen analyseren', 'Analyze headers': 'Berichtkoppen analyseren', 'Message summary': 'Berichtoverzicht', 'Your headers stay in your browser.': 'Je berichtkoppen blijven in je browser.' } };
+    page.props.i18n = { locale: 'nl', messages: { 'Message Header Analyzer': 'Headeranalyse', 'Analyze headers': 'Headers analyseren', 'Message summary': 'Berichtgegevens', 'Your headers stay in your browser.': 'Je headers blijven in je browser.' } };
     const wrapper = mountPage();
-    expect(wrapper.get('h1').text()).toBe('Berichtkoppen analyseren');
+    expect(wrapper.get('h1').text()).toBe('Headeranalyse');
     await analyze(wrapper, 'Subject: Raw evidence remains unchanged');
-    expect(wrapper.text()).toContain('Berichtoverzicht');
+    expect(wrapper.text()).toContain('Berichtgegevens');
     expect(wrapper.text()).toContain('Raw evidence remains unchanged');
     wrapper.unmount();
 });

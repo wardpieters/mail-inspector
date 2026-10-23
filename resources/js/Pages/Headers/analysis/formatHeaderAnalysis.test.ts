@@ -9,9 +9,9 @@ it('exports versioned JSON with evidence and limitations but no message body', (
     expect(text).toContain('Authentication-Results');
 });
 it('copies a localized human-readable report including evidence and limitations', () => {
-    const text = formatHeaderAnalysis(analysis(), key => ({ 'Message summary': 'Berichtoverzicht', 'Reported pass': 'Gerapporteerd geslaagd' })[key] ?? key);
-    expect(text).toContain('Berichtoverzicht');
-    expect(text).toContain('Gerapporteerd geslaagd');
+    const text = formatHeaderAnalysis(analysis(), key => ({ 'Message summary': 'Berichtgegevens', 'Reported pass': 'pass (volgens header)' })[key] ?? key);
+    expect(text).toContain('Berichtgegevens');
+    expect(text).toContain('pass (volgens header)');
     expect(text).toContain('Authentication-Results: mx.example; spf=pass');
     expect(text).not.toContain('SECRET_BODY');
 });

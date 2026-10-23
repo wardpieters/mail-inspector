@@ -30,7 +30,7 @@ class HeaderAnalyzerPageTest extends TestCase
     {
         return [
             'English' => ['en-US', 'en_US', 'Message Header Analyzer', 'Your headers stay in your browser.'],
-            'Dutch' => ['nl-NL', 'nl', 'Berichtkoppen analyseren', 'Je berichtkoppen blijven in je browser.'],
+            'Dutch' => ['nl-NL', 'nl', 'Headeranalyse', 'Je headers blijven in je browser.'],
         ];
     }
 }
