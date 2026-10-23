@@ -6,6 +6,11 @@ export function recognizeGeneric(field: HeaderField): SpamObservation | null {
     for (const [prefix, family] of families) {
         if (field.lookupName.startsWith(prefix)) { return spamObservation(field, family); }
     }
+    if (field.lookupName === 'x-spam') {
+        const result = spamObservation(field, 'generic');
+        if (/^(yes|no|true|false)$/i.test(field.value.trim())) { result.verdict = field.value.trim(); }
+        return result;
+    }
     if (/^x-(?:spam|spamd|rspamd)-/.test(field.lookupName) || field.lookupName.includes('antispam')) {
         return spamObservation(field, 'generic');
     }

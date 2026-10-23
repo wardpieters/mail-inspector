@@ -29,8 +29,11 @@ export function analyzeAuthentication(document: HeaderDocument): AuthAnalysis {
             continue;
         }
         if (field.lookupName === 'received-spf') {
-            const match = /^([a-z]+)/i.exec(field.value);
+            const match = /^([^\s;()]+)/.exec(field.value);
             analysis.observations.push({ ...base, method: 'spf', result: match?.[1].toLowerCase() ?? null, properties: properties(field.value) });
+            if (!match || !['pass', 'fail', 'softfail', 'neutral', 'none', 'temperror', 'permerror'].includes(match[1].toLowerCase())) {
+                analysis.warnings.push({ code: 'auth_unknown', fieldIds: [field.id], params: {} });
+            }
             continue;
         }
         if (field.lookupName === 'arc-authentication-results') {
@@ -46,7 +49,7 @@ export function analyzeAuthentication(document: HeaderDocument): AuthAnalysis {
         for (const part of parts.filter(Boolean)) {
             const clean = stripHeaderComments(part).trim();
             if (clean.toLowerCase() === 'none') { analysis.observations.push({ ...base, method: 'none', result: 'none', raw: part }); continue; }
-            const match = /^([\w-]+)(?:\/\d+)?\s*=\s*([\w-]+)/.exec(clean);
+            const match = /^([\w-]+)(?:\/\d+)?\s*=\s*([^\s;()]+)/.exec(clean);
             if (!match) {
                 analysis.warnings.push({ code: 'auth_malformed', fieldIds: [field.id], params: {} });
                 analysis.observations.push({ ...base, raw: part });

@@ -36,3 +36,15 @@ it('leaves totals unknown for zero/one hop or an invalid endpoint', () => {
     expect(analyze('Received: by a; 23 Oct 2026 10:00:00 +0000').observedTransitMs).toBeNull();
     expect(analyze('Received: by b; invalid\nReceived: by a; 23 Oct 2026 10:00:00 +0000').observedTransitMs).toBeNull();
 });
+
+it('preserves UTF-16 offsets when Received comments contain emoji', () => {
+    const result = analyze('Received: from sender.example (😀) by mx.example with ESMTP; 23 Oct 2026 10:00:00 +0000');
+    expect(result.hops[0]).toMatchObject({ protocol: 'ESMTP', by: 'mx.example', timestamp: { iso: '2026-10-23T10:00:00.000Z' } });
+    expect(result.warnings).toEqual([]);
+});
+it('warns about a negative endpoint total even when an intermediate timestamp is unknown', () => {
+    const result = analyze('Received: by c; 23 Oct 2026 10:00:00 +0000\nReceived: by b; invalid\nReceived: by a; 23 Oct 2026 10:01:00 +0000');
+    expect(result.observedTransitMs).toBe(-60000);
+    expect(result.hops.map(h => h.delayMs)).toEqual([null, null, null]);
+    expect(result.warnings.map(w => w.code)).toContain('negative_transit');
+});

@@ -18,6 +18,7 @@ const ISSUE_LABELS: Record<string, string> = {
     malformed_line: 'Line :line could not be parsed and was preserved as raw evidence.',
     encoded_word: 'An encoded word could not be decoded. The original value is preserved.',
     duplicate_field: 'The :name field appears more than once. All values are preserved.',
+    negative_transit: 'Observed transit time is negative. Server clocks or header order may differ.',
     hop_date: 'Hop :hop has an unknown or unsupported timestamp.',
     negative_delay: 'Hop :hop has a negative delay. Server clocks or header order may differ.',
     auth_malformed: 'Some authentication evidence could not be interpreted. Inspect the original header.',

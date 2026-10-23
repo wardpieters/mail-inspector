@@ -571,5 +571,6 @@
   "Reported filtering verdict code.": "Gerapporteerde filteroordeelcode.",
   "Reported connecting IP address.": "Gerapporteerd IP-adres van de verbindende server.",
   "Reported HELO or EHLO name.": "Gerapporteerde HELO- of EHLO-naam.",
-  "Reported reverse DNS name.": "Gerapporteerde reverse-DNS-naam."
+  "Reported reverse DNS name.": "Gerapporteerde reverse-DNS-naam.",
+  "Observed transit time is negative. Server clocks or header order may differ.": "De waargenomen transittijd is negatief. Serverklokken of de volgorde van berichtkoppen kunnen afwijken."
 }

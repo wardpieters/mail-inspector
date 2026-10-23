@@ -41,3 +41,14 @@ it('bounds work on a large malformed signature property', () => {
     expect(result.observations[0].properties).toEqual([]);
     expect(performance.now() - started).toBeLessThan(2000);
 });
+
+it.each(['dkim=pass/fail', 'spf=pass=fail', 'dmarc=pass!'])('never promotes a malformed result token to a pass: %s', token => {
+    const result = analyze('Authentication-Results: mx.example; ' + token + ' header.d=example.org');
+    expect(result.observations[0].result).not.toBe('pass');
+    expect(result.warnings.map(w => w.code)).toContain('auth_unknown');
+});
+it('does not interpret a Received-SPF result prefix as a complete pass', () => {
+    const result = analyze('Received-SPF: pass/fail client-ip=192.0.2.1');
+    expect(result.observations[0].result).toBe('pass/fail');
+    expect(result.warnings.map(w => w.code)).toContain('auth_unknown');
+});

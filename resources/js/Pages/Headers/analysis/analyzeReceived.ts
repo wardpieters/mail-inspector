@@ -6,7 +6,8 @@ function maskComments(value: string): string {
     let quoted = false;
     let escaped = false;
     let masked = '';
-    for (const character of value) {
+    for (let index = 0; index < value.length; index++) {
+        const character = value[index];
         if (escaped) {
             masked += ' ';
             escaped = false;
@@ -66,5 +67,8 @@ export function analyzeReceived(document: HeaderDocument): HopAnalysis {
     const first = result.hops[0]?.timestamp.epochMs;
     const last = result.hops.at(-1)?.timestamp.epochMs;
     if (result.hops.length > 1 && first != null && last != null) { result.observedTransitMs = last - first; }
+    if (result.observedTransitMs !== null && result.observedTransitMs < 0 && !result.warnings.some(w => w.code === 'negative_delay')) {
+        result.warnings.push({ code: 'negative_transit', fieldIds: [result.hops[0].fieldId, result.hops.at(-1)!.fieldId], params: {} });
+    }
     return result;
 }

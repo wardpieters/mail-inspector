@@ -15,3 +15,9 @@ it('warns and preserves malformed recognized fragments', () => {
     expect(result.observations[0].unknownFragments).toEqual(['broken "fragment']);
     expect(result.warnings.map(w => w.code)).toContain('spam_partial');
 });
+
+it('recognizes standalone spam flags without inferring the generating provider', () => {
+    const result = analyzeSpam(parseHeaders('X-Spam: Yes\nX-Spam: No').document!);
+    expect(result.observations.map(o => [o.family, o.verdict, o.sourceFieldIds])).toEqual([['generic', 'Yes', [0]], ['generic', 'No', [1]]]);
+    expect(result.warnings.map(w => w.code)).toContain('spam_conflict');
+});

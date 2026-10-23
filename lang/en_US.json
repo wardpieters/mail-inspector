@@ -571,5 +571,6 @@
   "Reported filtering verdict code.": "Reported filtering verdict code.",
   "Reported connecting IP address.": "Reported connecting IP address.",
   "Reported HELO or EHLO name.": "Reported HELO or EHLO name.",
-  "Reported reverse DNS name.": "Reported reverse DNS name."
+  "Reported reverse DNS name.": "Reported reverse DNS name.",
+  "Observed transit time is negative. Server clocks or header order may differ.": "Observed transit time is negative. Server clocks or header order may differ."
 }

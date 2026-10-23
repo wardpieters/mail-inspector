@@ -26,3 +26,11 @@ it('bounds work on status fields with large trailing whitespace', () => {
     expect(read('X-Spam-Status', 'No, score=1' + ' '.repeat(100000))?.score).toBe(1);
     expect(performance.now() - started).toBeLessThan(2000);
 });
+
+it('does not promote quoted or commented properties into top-level scores', () => {
+    const result = read('X-Spam-Status', 'No, score=1 required=5 reason="old score=99 required=100" (score=88) tests=OK')!;
+    expect(result.score).toBe(1);
+    expect(result.threshold).toBe(5);
+    expect(result.rules.map(r => r.name)).toEqual(['OK']);
+    expect(result.values).toContainEqual({ name: 'reason', value: 'old score=99 required=100', explanationKey: null });
+});
