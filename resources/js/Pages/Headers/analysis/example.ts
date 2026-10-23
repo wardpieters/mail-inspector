@@ -1,0 +1,16 @@
+export const EXAMPLE_HEADERS = [
+    'Received: from filter.example.org (filter.example.org [192.0.2.20]) by inbox.example.org with ESMTPS id final123; Fri, 23 Oct 2026 10:00:42 +0000',
+    'Received: from outbound.example.org (outbound.example.org [192.0.2.10]) by filter.example.org with ESMTPS id filter123; Fri, 23 Oct 2026 10:00:12 +0000',
+    'Received: by outbound.example.org with ESMTP id origin123; Fri, 23 Oct 2026 10:00:00 +0000',
+    'From: Example Sender <sender@example.org>',
+    'To: Example Recipient <recipient@example.net>',
+    'Subject: =?UTF-8?Q?A_look_inside_your_message?=',
+    'Date: Fri, 23 Oct 2026 10:00:00 +0000',
+    'Message-ID: <example-message@example.org>',
+    'Return-Path: <sender@example.org>',
+    'Authentication-Results: inbox.example.org; spf=pass smtp.mailfrom=example.org; dkim=pass header.d=example.org; dmarc=pass header.from=example.org',
+    'X-Spamd-Result: default: False [-1.20 / 15.00]; DKIM_ALLOW(-0.20)[example.org]; SPF_ALLOW(-1.00)[example.org]',
+    'X-Rspamd-Action: no action',
+    'X-Spam-Status: No, score=-1.2 required=5.0 tests=DKIM_VALID,SPF_PASS autolearn=ham version=4.0.0',
+    'X-Example-Note: Synthetic example; no real message was submitted.',
+].join('\r\n');

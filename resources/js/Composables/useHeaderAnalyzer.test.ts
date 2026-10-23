@@ -1,0 +1,77 @@
+import { mount } from '@vue/test-utils';
+import { defineComponent, nextTick } from 'vue';
+import { afterEach, expect, it, vi } from 'vitest';
+import { useHeaderAnalyzer } from './useHeaderAnalyzer';
+
+afterEach(() => { vi.restoreAllMocks(); vi.unstubAllGlobals(); document.body.innerHTML = ''; });
+function harness() {
+    let state!: ReturnType<typeof useHeaderAnalyzer>;
+    const wrapper = mount(defineComponent({ setup() { state = useHeaderAnalyzer(); return {}; }, template: '<div />' }));
+    return { state, wrapper };
+}
+it('invalidates edited results synchronously and clears on example, clear, history restoration and unmount', async () => {
+    const { state, wrapper } = harness();
+    state.input.value = 'Subject: private'; state.analyze();
+    expect(state.analysis.value?.summary.subject[0].value).toBe('private');
+    state.input.value = 'Subject: changed';
+    expect(state.analysis.value).toBeNull();
+    state.analyze();
+    expect(state.analysis.value?.summary.subject[0].value).toBe('changed');
+    state.loadExample();
+    expect(state.input.value).toContain('example.org');
+    expect(state.analysis.value).toBeNull();
+    state.analyze();
+    window.dispatchEvent(new PageTransitionEvent('pageshow', { persisted: true }));
+    await nextTick();
+    expect(state.input.value).toBe('');
+    state.input.value = 'Subject: private'; state.analyze(); state.clear();
+    expect(state.analysis.value).toBeNull();
+    expect(state.error.value).toBeNull();
+    state.input.value = 'Subject: private'; state.analyze(); wrapper.unmount();
+    expect(state.input.value).toBe('');
+    expect(state.analysis.value).toBeNull();
+    const fresh = harness();
+    expect(fresh.state.input.value).toBe('');
+    fresh.wrapper.unmount();
+});
+it('supplies selectable manual copy on clipboard denial and never revives stale state', async () => {
+    vi.stubGlobal('navigator', { clipboard: { writeText: vi.fn().mockRejectedValue(new Error('denied')) } });
+    const { state, wrapper } = harness();
+    state.input.value = 'Subject: private'; state.analyze();
+    await state.copyAnalysis(key => key);
+    expect(state.manualCopy.value).toContain('Subject: private');
+    let reject!: (error: Error) => void;
+    navigator.clipboard.writeText = () => new Promise((_, no) => { reject = no; });
+    const pending = state.copyAnalysis(key => key);
+    state.clear();
+    reject(new Error('denied')); await pending;
+    expect(state.manualCopy.value).toBeNull();
+    expect(state.status.value).toBeNull();
+    wrapper.unmount();
+});
+it('does not send or persist header data and downloads only current header analysis', async () => {
+    const fetch = vi.fn(); vi.stubGlobal('fetch', fetch);
+    const beacon = vi.fn(); vi.stubGlobal('navigator', { sendBeacon: beacon });
+    const xhr = vi.spyOn(XMLHttpRequest.prototype, 'open');
+    const storage = vi.spyOn(Storage.prototype, 'setItem');
+    const create = vi.fn().mockReturnValue('blob:example');
+    const revoke = vi.fn();
+    vi.stubGlobal('URL', { createObjectURL: create, revokeObjectURL: revoke });
+    let filename = '';
+    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function(this: HTMLAnchorElement) { filename = this.download; });
+    const { state, wrapper } = harness();
+    state.downloadJson(); expect(create).not.toHaveBeenCalled();
+    state.input.value = 'Subject: PRIVATE_SENTINEL\n\nSECRET_BODY'; state.analyze(); state.downloadJson();
+    expect(filename).toBe('message-header-analysis.json');
+    const blob: Blob = create.mock.calls[0][0];
+    expect(blob.type).toBe('application/json');
+    const text = await new Promise<string>(resolve => { const reader = new FileReader(); reader.onload = () => resolve(String(reader.result)); reader.readAsText(blob); });
+    expect(text).toContain('PRIVATE_SENTINEL');
+    expect(text).not.toContain('SECRET_BODY');
+    state.input.value = 'Subject: edit'; state.downloadJson();
+    expect(create).toHaveBeenCalledTimes(1);
+    await new Promise(resolve => setTimeout(resolve, 0));
+    expect(revoke).toHaveBeenCalledWith('blob:example');
+    state.clear(); wrapper.unmount();
+    expect(fetch).not.toHaveBeenCalled(); expect(xhr).not.toHaveBeenCalled(); expect(beacon).not.toHaveBeenCalled(); expect(storage).not.toHaveBeenCalled();
+});
