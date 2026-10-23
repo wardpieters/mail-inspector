@@ -12,7 +12,7 @@ export function recognizeSpamAssassin(field: HeaderField): SpamObservation | nul
     } else if (field.lookupName === 'x-spam-status') {
         const verdict = /^(Yes|No)\b/i.exec(field.value);
         result.verdict = verdict?.[1] ?? null;
-        const values = [...field.value.matchAll(/(?:^|[\s,])([a-z][\w-]*)=([\s\S]*?)(?=[\s,]+[a-z][\w-]*=|$)/gi)];
+        const values = [...field.value.matchAll(/(?:^|[\s,])([a-z][\w-]*)=([\s\S]*?)(?=[\s,][a-z][\w-]*=|$)/gi)];
         if (!verdict || values.length === 0) { result.unknownFragments.push(field.value); }
         for (const match of values) {
             const name = match[1].toLowerCase();

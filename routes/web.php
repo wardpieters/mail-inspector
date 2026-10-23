@@ -21,6 +21,8 @@ Route::get('/', fn () => Inertia::render('Home', [
             'url' => route('scans.show', $scan->public_id),
         ]),
 ]))->name('home');
+Route::get('/headers', fn () => Inertia::render('Headers/Show'))->name('headers.show');
+
 Route::get('/privacy', fn () => Inertia::render('Privacy', [
     'retention_days' => (int) config('mail_scan.retention_days', 7),
     'contact' => [

@@ -20,6 +20,7 @@ class HandleInertiaRequests extends Middleware
             'i18n' => Inertia::always(['locale' => $locale, 'messages' => $messages]),
             'navigation' => [
                 'home' => route('home', absolute: false),
+                'headers' => route('headers.show', absolute: false),
                 'privacy' => route('privacy', absolute: false),
             ],
         ];

@@ -3,7 +3,7 @@ import { scanHeaderTokens, stripHeaderComments } from './splitHeaderTokens';
 
 function properties(value: string): { name: string; value: string }[] {
     const clean = stripHeaderComments(value);
-    return [...clean.matchAll(/([a-z][\w.-]*)\s*=\s*("(?:[^"\\]|\\.)*"|[^\s;()]+)/gi)].map(match => ({
+    return [...clean.matchAll(/(?:^|[\s;])([a-z][\w.-]*)\s*=\s*("(?:[^"\\]|\\.)*"|[^\s;()]+)/gi)].map(match => ({
         name: match[1].toLowerCase(),
         value: match[2].startsWith('"') ? match[2].slice(1, -1).replace(/\\(.)/g, '$1') : match[2],
     }));

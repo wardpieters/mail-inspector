@@ -14,8 +14,8 @@ const { t } = useTranslations();
         <article class="privacy-page">
             <Link :href="page.props.navigation.home" class="back-link">{{ t('← Back to domain diagnostics') }}</Link>
             <h1>{{ t('Privacy policy') }}</h1>
-            <p class="lede">{{ t('What Mail Inspector processes when you visit this site or inspect a domain.') }}</p>
-            <p class="help"><time datetime="2026-10-15">{{ t('Last updated: 15 October 2026') }}</time></p>
+            <p class="lede">{{ t('What Mail Inspector processes when you visit this site, inspect a domain, or analyze message headers.') }}</p>
+            <p class="help"><time datetime="2026-10-23">{{ t('Last updated: 23 October 2026') }}</time></p>
 
             <section aria-labelledby="privacy-operator">
                 <h2 id="privacy-operator">{{ t('Who is responsible') }}</h2>
@@ -26,6 +26,12 @@ const { t } = useTranslations();
                 <h2 id="privacy-data">{{ t('Data used for a scan') }}</h2>
                 <p>{{ t('We store the domain and optional DKIM selectors you submit, scan timestamps and status, and the diagnostic results. Results can include DNS records, mail-server hostnames and IP addresses, SMTP responses, and TLS certificate details. Published DNS records and server responses may contain personal data, such as contact email addresses.') }}</p>
                 <p>{{ t('Scans query public DNS, connect to mail servers, and may retrieve a domain’s MTA-STS policy over HTTPS. They do not access mailboxes, ask for mail credentials, or read your emails. SMTP checks stop before sending a message body; no test email is delivered.') }}</p>
+            </section>
+
+            <section aria-labelledby="privacy-headers">
+                <h2 id="privacy-headers">{{ t('Message header analysis') }}</h2>
+                <p>{{ t('Message headers are analyzed locally in your browser. Header content and analysis results are not uploaded, stored on our servers, or saved in browser storage. Leaving or reloading the page clears the analysis. Normal page visits still generate the technical data described below.') }}</p>
+                <p>{{ t('Copying or downloading an analysis is an explicit local action. These exports may contain email addresses, IP addresses, internal server names, and other personal information. Share them carefully. Clearing the analyzer does not erase files or text you already copied to your system clipboard.') }}</p>
             </section>
 
             <section aria-labelledby="privacy-purpose">

@@ -34,3 +34,10 @@ it('retains malformed source and emits an interpretation warning', () => {
     expect(result.observations[0].raw).toContain('reason="broken');
     expect(result.observations[0].result).toBeNull();
 });
+
+it('bounds work on a large malformed signature property', () => {
+    const started = performance.now();
+    const result = analyze('DKIM-Signature: ' + 'a'.repeat(100000));
+    expect(result.observations[0].properties).toEqual([]);
+    expect(performance.now() - started).toBeLessThan(2000);
+});

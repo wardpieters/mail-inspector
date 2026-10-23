@@ -20,3 +20,9 @@ it.each(['X-Spam-Level', 'X-Spam-Report', 'X-Spam-Checker-Version'])('retains ra
     expect(result.score).toBeNull();
     expect(result.values[0].value).toBe('raw text');
 });
+
+it('bounds work on status fields with large trailing whitespace', () => {
+    const started = performance.now();
+    expect(read('X-Spam-Status', 'No, score=1' + ' '.repeat(100000))?.score).toBe(1);
+    expect(performance.now() - started).toBeLessThan(2000);
+});
